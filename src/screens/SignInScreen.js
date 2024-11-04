@@ -11,7 +11,7 @@ export default function SignInScreen({ navigation }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Login Success!", "You are now logged in.");
-      navigation.navigate("Home"); // Navigate to the Home screen after successful login
+      navigation.navigate("ProtectedLayout");
     } catch (error) {
       console.error("Sign In Error:", error);
       Alert.alert("Sign In Failed", error.message);

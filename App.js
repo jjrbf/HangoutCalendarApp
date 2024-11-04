@@ -22,7 +22,7 @@ export default function App() {
       <Stack.Navigator initialRouteName="SignInScreen">
         {user ? (
           <Stack.Screen
-            name="ProtectedArea"
+            name="ProtectedLayout"
             component={ProtectedLayout}
             options={{ headerShown: false }}
           />
