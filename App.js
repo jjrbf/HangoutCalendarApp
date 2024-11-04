@@ -18,7 +18,7 @@ const CalendarSwitcher = () => {
   const startDayOfWeek = 0; // Start the week on Sunday
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View>
       {/* Switch button */}
       <TouchableOpacity
         style={styles.switchButton}
@@ -40,23 +40,25 @@ const CalendarSwitcher = () => {
 
       {/* Render the appropriate view based on state */}
       {isMonthView ? <MonthView /> : <WeekView />}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const SharedCalendars = () => (
-  <View style={styles.centeredContainer}>
+  <SafeAreaView style={styles.centeredContainer}>
     <Text>Recent</Text>
-  </View>
+  </SafeAreaView>
 );
 
 const MyCalendar = () => (
-  <View style={styles.centeredContainer}>
+  <SafeAreaView style={styles.centeredContainer}>
     <CalendarSwitcher />
-  </View>
+  </SafeAreaView>
 );
 
-const Me = () => <View style={styles.centeredContainer}></View>;
+const Me = () => (
+  <SafeAreaView style={styles.centeredContainer}></SafeAreaView>
+);
 
 const App = () => {
   return (
@@ -72,7 +74,11 @@ const App = () => {
           component={MyCalendar}
           options={{ headerShown: false }}
         />
-        <Tab.Screen name="Me" component={Me} options={{ headerShown: false }} />
+        <Tab.Screen 
+          name="Me"
+          component={Me}
+          options={{ headerShown: false }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   );
