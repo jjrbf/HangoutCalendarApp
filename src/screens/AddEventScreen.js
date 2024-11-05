@@ -4,7 +4,6 @@ import {
   View,
   Text,
   Button,
-  FlatList,
   StyleSheet,
   Alert,
   TextInput,
@@ -12,10 +11,9 @@ import {
 import { db, auth } from "../firebaseConfig"; // Import your Firestore and Auth configuration
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { CalendarSwitcher } from "../components";
 import { Timestamp } from "firebase/firestore";
 
-export default function MyCalendarScreen({ route, navigation }) {
+export default function AddEventScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
   const userId = auth.currentUser.uid; // Get the currently authenticated user's ID
 
@@ -79,6 +77,7 @@ export default function MyCalendarScreen({ route, navigation }) {
       setEventDescription("");
       setStartDate(new Date());
       setEndDate(new Date());
+      navigation.navigate("MyCalendarScreen");
     } catch (error) {
       console.error("Error adding event: ", error);
       Alert.alert("Error", "Could not add event.");
@@ -87,24 +86,111 @@ export default function MyCalendarScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CalendarSwitcher />
       <Button
-        title="Add Event"
-        onPress={() => navigation.navigate("AddEvent")}
+        title="Back to Screen"
+        onPress={() => navigation.navigate("MyCalendarScreen")}
       />
-      <View style={styles.eventsContainer}>
-        <FlatList
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.eventItem}>
-              <Text style={styles.eventTitle}>{item.title}</Text>
-              <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
-              <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
-              <Text>{item.description}</Text>
-            </View>
-          )}
+      <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Event Title"
+          value={eventTitle}
+          onChangeText={setEventTitle}
         />
+        <TextInput
+          style={styles.input}
+          placeholder="Event Description"
+          value={eventDescription}
+          onChangeText={setEventDescription}
+        />
+
+        <Button
+          title="Select Start Date"
+          onPress={() => setShowStartPicker(true)}
+        />
+        {showStartPicker && (
+          <DateTimePicker
+            value={startDate}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowStartPicker(false);
+              if (selectedDate) {
+                setStartDate(selectedDate);
+              }
+            }}
+          />
+        )}
+        <Button
+          title="Select Start Time"
+          onPress={() => setShowStartTimePicker(true)}
+        />
+        {showStartTimePicker && (
+          <DateTimePicker
+            value={startDate}
+            mode="time"
+            display="default"
+            onChange={(event, selectedTime) => {
+              setShowStartTimePicker(false);
+              if (selectedTime) {
+                const updatedStartDate = new Date(startDate);
+                updatedStartDate.setHours(
+                  selectedTime.nativeEvent.timestamp.getHours()
+                );
+                updatedStartDate.setMinutes(
+                  selectedTime.nativeEvent.timestamp.getMinutes()
+                );
+                setStartDate(updatedStartDate);
+              }
+            }}
+          />
+        )}
+        <Text>Start Date: {startDate.toLocaleString()}</Text>
+
+        <Button
+          title="Select End Date"
+          onPress={() => setShowEndPicker(true)}
+        />
+        {showEndPicker && (
+          <DateTimePicker
+            value={endDate}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowEndPicker(false);
+              if (selectedDate) {
+                setEndDate(selectedDate);
+              }
+            }}
+          />
+        )}
+        <Button
+          title="Select End Time"
+          onPress={() => setShowEndTimePicker(true)}
+        />
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={endDate}
+            mode="time"
+            display="default"
+            onChange={(event, selectedTime) => {
+              setShowEndTimePicker(false);
+              if (selectedTime) {
+                const updatedEndDate = new Date(endDate);
+                updatedEndDate.setHours(
+                  selectedTime.nativeEvent.timestamp.getHours()
+                );
+                updatedEndDate.setMinutes(
+                  selectedTime.nativeEvent.timestamp.getMinutes()
+                );
+                setEndDate(updatedEndDate);
+              }
+            }}
+          />
+        )}
+        <Text>End Date: {endDate.toLocaleString()}</Text>
+
+        <Button title="Add Event" onPress={handleAddEvent} />
       </View>
     </SafeAreaView>
   );
