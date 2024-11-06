@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import MyCalendarScreen from "./MyCalendarScreen.js";
 import AddEventScreen from "./AddEventScreen.js";
+import SetLocationScreen from "./SetLocationScreen.js";
 
 const Stack = createStackNavigator();
 
@@ -16,6 +17,10 @@ export default function MyCalendarTab({ navigation }) {
       <Stack.Screen
         name="AddEvent"
         component={AddEventScreen}
+      />
+      <Stack.Screen
+        name="SetLocation"
+        component={SetLocationScreen}
       />
     </Stack.Navigator>
   );

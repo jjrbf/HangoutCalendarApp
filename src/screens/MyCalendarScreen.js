@@ -7,11 +7,9 @@ import {
   FlatList,
   StyleSheet,
   Alert,
-  TextInput,
 } from "react-native";
 import { db, auth } from "../firebaseConfig"; // Import your Firestore and Auth configuration
 import { collection, getDocs, addDoc } from "firebase/firestore";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { CalendarSwitcher } from "../components";
 import { Timestamp } from "firebase/firestore";
 
@@ -24,10 +22,6 @@ export default function MyCalendarScreen({ route, navigation }) {
   const [eventDescription, setEventDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {

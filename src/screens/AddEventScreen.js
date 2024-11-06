@@ -168,6 +168,10 @@ export default function AddEventScreen({ route, navigation }) {
           title="Select End Time"
           onPress={() => setShowEndTimePicker(true)}
         />
+        <Button
+          title="Set Location"
+          onPress={() => {navigation.navigate("SetLocation")}}
+        />
         {showEndTimePicker && (
           <DateTimePicker
             value={endDate}
