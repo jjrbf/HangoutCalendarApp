@@ -5,6 +5,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { auth } from "./src/firebaseConfig";
 import { SignInScreen, SignUpScreen, ProtectedLayout } from "./src/screens";
 
+// hello
+
 const Stack = createStackNavigator();
 
 export default function App() {
