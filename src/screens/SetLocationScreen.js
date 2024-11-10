@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
 import { auth } from "../firebaseConfig";
 import Geocoder from "react-native-geocoding";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
 import { GOOGLE_MAPS_API_KEY } from "../config";
 
 export default function SetLocationScreen({ navigation }) {
@@ -78,16 +78,23 @@ export default function SetLocationScreen({ navigation }) {
     }
   };
 
-  let text = "Waiting..";
+  const handleMapPress = (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setSelectedLocation({ latitude, longitude });
+  };
+
+  let locationText = "Waiting..";
   if (errorMsg) {
-    text = errorMsg;
+    locationText = errorMsg;
+  } else if (selectedLocation) {
+    locationText = `Selected location: latitude: ${selectedLocation.latitude}, longitude: ${selectedLocation.longitude}`;
   } else if (location) {
-    text = `Current location: latitude: ${location.coords.latitude} // longitude: ${location.coords.longitude}`;
+    locationText = `Current location: latitude: ${location.coords.latitude}, longitude: ${location.coords.longitude}`;
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.paragraph}> {text}</Text>
+      <Text style={styles.paragraph}> {locationText}</Text>
       <View style={styles.searchRow}>
         <TextInput
           style={styles.input}
@@ -112,7 +119,16 @@ export default function SetLocationScreen({ navigation }) {
         showsMyLocationButton
         showsUserLocation
         provider={PROVIDER_GOOGLE}
-      />
+        onPress={handleMapPress} // Add handler for map press
+      >
+        {selectedLocation && (
+          <Marker
+            coordinate={selectedLocation}
+            title="Selected Location"
+            description={`Lat: ${selectedLocation.latitude}, Lng: ${selectedLocation.longitude}`}
+          />
+        )}
+      </MapView>
 
       <Button title="Set Location" onPress={handleSetLocation} />
     </SafeAreaView>
