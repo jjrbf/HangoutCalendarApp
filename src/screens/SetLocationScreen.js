@@ -1,35 +1,120 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from "react-native";
-import { db, auth } from "../firebaseConfig"; // Import your Firestore and Auth configuration
-import { collection, getDocs, addDoc } from "firebase/firestore";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Timestamp } from "firebase/firestore";
+import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
+import { auth } from "../firebaseConfig";
+import Geocoder from "react-native-geocoding";
+import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import { GOOGLE_MAPS_API_KEY } from "../config";
 
-export default function SetLocationScreen({ route, navigation }) {
-  const userId = auth.currentUser.uid; // Get the currently authenticated user's ID
+export default function SetLocationScreen({ navigation }) {
+  const userId = auth.currentUser.uid;
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [searchLocation, setSearchLocation] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
-  // State variables for new event
-  const [eventTitle, setEventTitle] = useState("");
-  const [eventDescription, setEventDescription] = useState("");
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  Geocoder.init(GOOGLE_MAPS_API_KEY);
+
+  const mapRef = useRef(null);
+
+  // Perform search based on search term entered by the user
+  const performSearch = async () => {
+    try {
+      const json = await Geocoder.from(searchLocation);
+      const location = json.results[0].geometry.location;
+      const searchedLocation = {
+        latitude: location.lat,
+        longitude: location.lng,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+
+      // Update the map view to the searched location and set as selected location
+      mapRef.current?.animateCamera(
+        { center: searchedLocation, zoom: 15 },
+        { duration: 2000 }
+      );
+
+      // Set the selected location for use later
+      setSelectedLocation({
+        latitude: location.lat,
+        longitude: location.lng,
+      });
+    } catch (error) {
+      console.warn(error);
+      Alert.alert("Error", "Location not found. Please try again.");
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was denied");
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      if (location) {
+        setLocation(location);
+        setSelectedLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } else {
+        setErrorMsg("Current location not obtained");
+        return;
+      }
+    })();
+  }, []);
+
+  const handleSetLocation = () => {
+    if (selectedLocation) {
+      navigation.navigate("AddEvent", {
+        selectedLocation, // Pass the selected location back to AddEventScreen
+      });
+    } else {
+      Alert.alert("Error", "Please select a location first.");
+    }
+  };
+
+  let text = "Waiting..";
+  if (errorMsg) {
+    text = errorMsg;
+  } else if (location) {
+    text = `Current location: latitude: ${location.coords.latitude} // longitude: ${location.coords.longitude}`;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
+      <Text style={styles.paragraph}> {text}</Text>
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.input}
+          onChangeText={setSearchLocation}
+          value={searchLocation}
+          placeholder="Enter location - name or address"
+        />
+        <View style={styles.buttonView}>
+          <Button title="Search" onPress={performSearch} />
+        </View>
+      </View>
 
-        <Button title="Add Event"/>
+      <MapView
+        style={styles.map}
+        ref={mapRef}
+        initialRegion={{
+          latitude: location ? location.coords.latitude : 37.78825,
+          longitude: location ? location.coords.longitude : -122.4324,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        showsMyLocationButton
+        showsUserLocation
+        provider={PROVIDER_GOOGLE}
+      />
+
+      <Button title="Set Location" onPress={handleSetLocation} />
     </SafeAreaView>
   );
 }
@@ -39,27 +124,26 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  formContainer: {
-    marginBottom: 16,
-  },
   input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-  },
-  eventsContainer: {
     flex: 1,
-    marginBottom: 16,
-  },
-  eventItem: {
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: "#f9f9f9",
+    borderWidth: 1,
+    borderColor: "black",
+    padding: 5,
     borderRadius: 5,
+    margin: 10,
   },
-  eventTitle: {
+  paragraph: {
     fontWeight: "bold",
+    fontSize: 14,
+  },
+  map: {
+    width: "100%",
+    height: "70%",
+  },
+  searchRow: {
+    flexDirection: "row",
+  },
+  buttonView: {
+    margin: 10,
   },
 });

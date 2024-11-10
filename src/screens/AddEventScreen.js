@@ -1,21 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from "react-native";
-import { db, auth } from "../firebaseConfig"; // Import your Firestore and Auth configuration
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
+import { db, auth } from "../firebaseConfig";
+import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Timestamp } from "firebase/firestore";
 
 export default function AddEventScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
-  const userId = auth.currentUser.uid; // Get the currently authenticated user's ID
+  const userId = auth.currentUser.uid;
 
   // State variables for new event
   const [eventTitle, setEventTitle] = useState("");
@@ -26,8 +18,14 @@ export default function AddEventScreen({ route, navigation }) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [location, setLocation] = useState(null); // Holds selected location data
 
   useEffect(() => {
+    // Retrieve location from route params if set in SetLocationScreen
+    if (route.params?.selectedLocation) {
+      setLocation(route.params.selectedLocation);
+    }
+
     const fetchEvents = async () => {
       try {
         const calendarId = `personal_calendar_${userId}`;
@@ -44,9 +42,10 @@ export default function AddEventScreen({ route, navigation }) {
           return {
             id: doc.id,
             title: data.title,
-            startDate: data.startDate.toDate(), // Convert Firestore Timestamp to Date
-            endDate: data.endDate.toDate(), // Convert Firestore Timestamp to Date
+            startDate: data.startDate.toDate(),
+            endDate: data.endDate.toDate(),
             description: data.description,
+            location: data.location || null,
           };
         });
         setEvents(eventsList);
@@ -57,26 +56,29 @@ export default function AddEventScreen({ route, navigation }) {
     };
 
     fetchEvents();
-  }, [userId]);
+  }, [userId, route.params?.selectedLocation]);
 
   const handleAddEvent = async () => {
     const newEvent = {
       title: eventTitle,
-      startDate: Timestamp.fromDate(startDate), // Use Firestore's Timestamp
-      endDate: Timestamp.fromDate(endDate), // Use Firestore's Timestamp
+      startDate: Timestamp.fromDate(startDate),
+      endDate: Timestamp.fromDate(endDate),
       description: eventDescription,
+      location: location || null,
     };
 
     try {
       const calendarId = `personal_calendar_${userId}`;
       await addDoc(collection(db, "calendars", calendarId, "events"), newEvent);
-      setEvents((prevEvents) => [...prevEvents, newEvent]); // Update local state for immediate UI feedback
+      setEvents((prevEvents) => [...prevEvents, newEvent]);
       Alert.alert("Success", "Event added successfully!");
+
       // Reset fields after adding the event
       setEventTitle("");
       setEventDescription("");
       setStartDate(new Date());
       setEndDate(new Date());
+      setLocation(null);
       navigation.navigate("MyCalendarScreen");
     } catch (error) {
       console.error("Error adding event: ", error);
@@ -134,12 +136,8 @@ export default function AddEventScreen({ route, navigation }) {
               setShowStartTimePicker(false);
               if (selectedTime) {
                 const updatedStartDate = new Date(startDate);
-                updatedStartDate.setHours(
-                  selectedTime.nativeEvent.timestamp.getHours()
-                );
-                updatedStartDate.setMinutes(
-                  selectedTime.nativeEvent.timestamp.getMinutes()
-                );
+                updatedStartDate.setHours(selectedTime.getHours());
+                updatedStartDate.setMinutes(selectedTime.getMinutes());
                 setStartDate(updatedStartDate);
               }
             }}
@@ -168,10 +166,6 @@ export default function AddEventScreen({ route, navigation }) {
           title="Select End Time"
           onPress={() => setShowEndTimePicker(true)}
         />
-        <Button
-          title="Set Location"
-          onPress={() => {navigation.navigate("SetLocation")}}
-        />
         {showEndTimePicker && (
           <DateTimePicker
             value={endDate}
@@ -181,18 +175,24 @@ export default function AddEventScreen({ route, navigation }) {
               setShowEndTimePicker(false);
               if (selectedTime) {
                 const updatedEndDate = new Date(endDate);
-                updatedEndDate.setHours(
-                  selectedTime.nativeEvent.timestamp.getHours()
-                );
-                updatedEndDate.setMinutes(
-                  selectedTime.nativeEvent.timestamp.getMinutes()
-                );
+                updatedEndDate.setHours(selectedTime.getHours());
+                updatedEndDate.setMinutes(selectedTime.getMinutes());
                 setEndDate(updatedEndDate);
               }
             }}
           />
         )}
         <Text>End Date: {endDate.toLocaleString()}</Text>
+
+        <Text style={styles.locationText}>
+          {location
+            ? `Location set: Latitude ${location.latitude}, Longitude ${location.longitude}`
+            : "No location set"}
+        </Text>
+        <Button
+          title="Set Location"
+          onPress={() => navigation.navigate("SetLocation")}
+        />
 
         <Button title="Add Event" onPress={handleAddEvent} />
       </View>
@@ -215,17 +215,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 10,
   },
-  eventsContainer: {
-    flex: 1,
-    marginBottom: 16,
-  },
-  eventItem: {
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 5,
-  },
-  eventTitle: {
+  locationText: {
+    marginTop: 10,
+    fontSize: 14,
     fontWeight: "bold",
   },
 });
