@@ -1,21 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  Button,
-  FlatList,
-  StyleSheet,
-  Alert,
-} from "react-native";
-import { db, auth } from "../firebaseConfig"; // Import your Firestore and Auth configuration
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { View, Text, Button, FlatList, StyleSheet, Alert } from "react-native";
+import { db, auth } from "../firebaseConfig";
+import { collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { CalendarSwitcher } from "../components";
 import { Timestamp } from "firebase/firestore";
 
 export default function MyCalendarScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
-  const userId = auth.currentUser.uid; // Get the currently authenticated user's ID
+  const userId = auth.currentUser.uid;
 
   // State variables for new event
   const [eventTitle, setEventTitle] = useState("");
@@ -23,52 +16,46 @@ export default function MyCalendarScreen({ route, navigation }) {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
 
+  const fetchEvents = async () => {
+    try {
+      const calendarId = `personal_calendar_${userId}`;
+      const eventsCollection = collection(db, "calendars", calendarId, "events");
+      const eventsSnapshot = await getDocs(eventsCollection);
+
+      const eventsList = eventsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          startDate: data.startDate.toDate(),
+          endDate: data.endDate.toDate(),
+          description: data.description,
+        };
+      });
+      setEvents(eventsList);
+    } catch (error) {
+      console.error("Error fetching events: ", error);
+      Alert.alert("Error", "Could not fetch events.");
+    }
+  };
+
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const calendarId = `personal_calendar_${userId}`;
-        const eventsCollection = collection(
-          db,
-          "calendars",
-          calendarId,
-          "events"
-        );
-        const eventsSnapshot = await getDocs(eventsCollection);
-
-        const eventsList = eventsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: data.title,
-            startDate: data.startDate.toDate(), // Convert Firestore Timestamp to Date
-            endDate: data.endDate.toDate(), // Convert Firestore Timestamp to Date
-            description: data.description,
-          };
-        });
-        setEvents(eventsList);
-      } catch (error) {
-        console.error("Error fetching events: ", error);
-        Alert.alert("Error", "Could not fetch events.");
-      }
-    };
-
     fetchEvents();
   }, [userId]);
 
   const handleAddEvent = async () => {
     const newEvent = {
       title: eventTitle,
-      startDate: Timestamp.fromDate(startDate), // Use Firestore's Timestamp
-      endDate: Timestamp.fromDate(endDate), // Use Firestore's Timestamp
+      startDate: Timestamp.fromDate(startDate),
+      endDate: Timestamp.fromDate(endDate),
       description: eventDescription,
     };
 
     try {
       const calendarId = `personal_calendar_${userId}`;
       await addDoc(collection(db, "calendars", calendarId, "events"), newEvent);
-      setEvents((prevEvents) => [...prevEvents, newEvent]); // Update local state for immediate UI feedback
+      setEvents((prevEvents) => [...prevEvents, newEvent]);
       Alert.alert("Success", "Event added successfully!");
-      // Reset fields after adding the event
       setEventTitle("");
       setEventDescription("");
       setStartDate(new Date());
@@ -79,13 +66,37 @@ export default function MyCalendarScreen({ route, navigation }) {
     }
   };
 
+  const handleDeleteEvent = async (eventId) => {
+    Alert.alert(
+      "Delete Event",
+      "Are you sure you want to delete this event?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const eventDoc = doc(db, "calendars", `personal_calendar_${userId}`, "events", eventId);
+              await deleteDoc(eventDoc);
+              setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+              Alert.alert("Success", "Event deleted successfully!");
+            } catch (error) {
+              console.error("Error deleting event: ", error);
+              Alert.alert("Error", "Could not delete event.");
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <CalendarSwitcher />
-      <Button
-        title="Add Event"
-        onPress={() => navigation.navigate("AddEvent")}
-      />
+      <Button title="Add Event" onPress={() => navigation.navigate("AddEvent")} />
+      <Button title="Refresh Events" onPress={fetchEvents} />
       <View style={styles.eventsContainer}>
         <FlatList
           data={events}
@@ -96,6 +107,16 @@ export default function MyCalendarScreen({ route, navigation }) {
               <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
               <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
               <Text>{item.description}</Text>
+              <View style={styles.buttonContainer}>
+                <Button
+                  title="See More"
+                  onPress={() => navigation.navigate("EventDetails", { eventId: item.id })}
+                />
+                <Button
+                  title="Delete"
+                  onPress={() => handleDeleteEvent(item.id)}
+                />
+              </View>
             </View>
           )}
         />
@@ -109,16 +130,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  formContainer: {
-    marginBottom: 16,
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-  },
   eventsContainer: {
     flex: 1,
     marginBottom: 16,
@@ -131,5 +142,10 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
   },
 });
