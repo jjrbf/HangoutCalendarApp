@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert } from "react-native";
-import { db, auth } from "../firebaseConfig"; // Import your Firestore configuration
+import { db, auth } from "../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import MapView, { Marker } from "react-native-maps";
 
