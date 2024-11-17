@@ -8,7 +8,7 @@ const Stack = createStackNavigator();
 
 export default function ProfileTab({ navigation }) {
   return (
-    <Stack.Navigator initialRouteName="SharedCalendarScreen">
+    <Stack.Navigator initialRouteName="SharedCalendar">
       <Stack.Screen
         name="SharedCalendar"
         component={SharedCalendarScreen}
