@@ -1,57 +1,85 @@
-import React, { useEffect, useState } from "react";
-import { Text, Button, Alert, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../firebaseConfig"; // Import Firestore db
-import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // Import Firestore functions
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  Alert,
+  FlatList,
+  StyleSheet,
+} from "react-native";
+import { db, auth } from "../firebaseConfig";
+import { getDocs, query, collection, where, updateDoc, arrayUnion, doc } from "firebase/firestore";
 
-export default function AddFriendsScreen({ navigation }) {
-  const [userName, setUserName] = useState("");
-  const userId = auth.currentUser.uid; // Get the currently authenticated user's ID
+export default function FriendsScreen({ navigation }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
-  // Fetch user data from Firestore
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, "users", userId)); // Fetch user document
-        if (userDoc.exists()) {
-          setUserName(userDoc.data().name); // Set user's name
-        } else {
-          console.error("No such user document!");
-        }
-      } catch (error) {
-        console.error("Error fetching user data: ", error);
-      }
-    };
-
-    fetchUserData();
-  }, [userId]); // Fetch user data when userId changes
-
-  const handleLogout = async () => {
+  const handleSearch = async () => {
     try {
-      await signOut(auth);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.navigate("SignIn"); // Navigate back to the SignIn screen
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("username", "==", searchQuery));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        Alert.alert("No Results", "No user found with that username.");
+        setSearchResults([]);
+      } else {
+        const results = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setSearchResults(results);
+      }
     } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Logout Failed", error.message);
+      console.error("Search Error:", error);
+      Alert.alert("Error", "Could not search for users.");
+    }
+  };
+
+  const handleAddFriend = async (friendId) => {
+    const userId = auth.currentUser.uid;
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        friends: arrayUnion(friendId),
+      });
+      Alert.alert("Success", "Friend added successfully!");
+    } catch (error) {
+      console.error("Add Friend Error:", error);
+      Alert.alert("Error", "Could not add friend.");
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>My Profile</Text>
-      <Text style={styles.userName}>{userName}</Text>
-      <Button title="Logout" onPress={handleLogout} />
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Add Friends</Text>
+      <TextInput
+        placeholder="Search by username"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        style={styles.input}
+      />
+      <Button title="Search" onPress={handleSearch} />
+      {searchResults.length > 0 && (
+        <FlatList
+          data={searchResults}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.resultItem}>
+              <Text style={styles.resultName}>{item.name}</Text>
+              <Text style={styles.resultUsername}>@{item.username}</Text>
+              <Button title="Add Friend" onPress={() => handleAddFriend(item.id)} />
+            </View>
+          )}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 16,
   },
   title: {
@@ -59,8 +87,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
-  userName: {
-    fontSize: 18,
-    marginBottom: 20,
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
+  resultItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  resultName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  resultUsername: {
+    fontSize: 14,
+    color: "#555",
   },
 });
