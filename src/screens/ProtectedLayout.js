@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MyCalendarTab from "./MyCalendarTab.js";
 import SharedCalendarScreen from "./SharedCalendarScreen.js";
-import ProfileScreen from "./ProfileScreen.js";
+import ProfileTab from "./ProfileTab.js";
 
 const Tab = createBottomTabNavigator();
 
@@ -21,7 +21,7 @@ export default function ProtectedLayout() {
       />
       <Tab.Screen
         name="Me"
-        component={ProfileScreen}
+        component={ProfileTab}
         options={{ headerShown: false }}
       />
     </Tab.Navigator>
