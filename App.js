@@ -19,7 +19,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="SignInScreen">
+      <Stack.Navigator initialRouteName="SignIn">
         {user ? (
           <Stack.Screen
             name="ProtectedLayout"
