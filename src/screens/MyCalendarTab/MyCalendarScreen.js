@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, FlatList, StyleSheet, Alert } from "react-native";
-import { db, auth } from "../firebaseConfig";
-import { collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
-import { CalendarSwitcher } from "../components";
+import { db, auth } from "../../firebaseConfig";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
+import { CalendarSwitcher } from "../../components";
 import { Timestamp } from "firebase/firestore";
 
 export default function MyCalendarScreen({ route, navigation }) {
@@ -19,7 +25,12 @@ export default function MyCalendarScreen({ route, navigation }) {
   const fetchEvents = async () => {
     try {
       const calendarId = `personal_calendar_${userId}`;
-      const eventsCollection = collection(db, "calendars", calendarId, "events");
+      const eventsCollection = collection(
+        db,
+        "calendars",
+        calendarId,
+        "events"
+      );
       const eventsSnapshot = await getDocs(eventsCollection);
 
       const eventsList = eventsSnapshot.docs.map((doc) => {
@@ -77,9 +88,17 @@ export default function MyCalendarScreen({ route, navigation }) {
           style: "destructive",
           onPress: async () => {
             try {
-              const eventDoc = doc(db, "calendars", `personal_calendar_${userId}`, "events", eventId);
+              const eventDoc = doc(
+                db,
+                "calendars",
+                `personal_calendar_${userId}`,
+                "events",
+                eventId
+              );
               await deleteDoc(eventDoc);
-              setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+              setEvents((prevEvents) =>
+                prevEvents.filter((event) => event.id !== eventId)
+              );
               Alert.alert("Success", "Event deleted successfully!");
             } catch (error) {
               console.error("Error deleting event: ", error);
@@ -95,7 +114,10 @@ export default function MyCalendarScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <CalendarSwitcher />
-      <Button title="Add Event" onPress={() => navigation.navigate("AddEvent")} />
+      <Button
+        title="Add Event"
+        onPress={() => navigation.navigate("AddEvent", {calendarId: `personal_calendar_${userId}`})}
+      />
       <Button title="Refresh Events" onPress={fetchEvents} />
       <View style={styles.eventsContainer}>
         <FlatList
@@ -110,7 +132,9 @@ export default function MyCalendarScreen({ route, navigation }) {
               <View style={styles.buttonContainer}>
                 <Button
                   title="See More"
-                  onPress={() => navigation.navigate("EventDetails", { eventId: item.id })}
+                  onPress={() =>
+                    navigation.navigate("EventDetails", { eventId: item.id })
+                  }
                 />
                 <Button
                   title="Delete"

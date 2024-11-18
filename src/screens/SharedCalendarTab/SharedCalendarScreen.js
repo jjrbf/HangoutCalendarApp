@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { auth, db } from "../firebaseConfig"; // Import Firebase config
+import { auth, db } from "../../firebaseConfig"; // Import Firebase config
 import { collection, query, where, getDocs } from "firebase/firestore"; // Firestore functions
 
 export default function SharedCalendarScreen({ navigation }) {

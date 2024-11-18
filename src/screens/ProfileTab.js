@@ -1,7 +1,7 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import ProfileScreen from "./ProfileScreen.js";
-import AddFriendsScreen from "./AddFriendsScreen.js";
+import ProfileScreen from "./ProfileTab/ProfileScreen.js";
+import AddFriendsScreen from "./ProfileTab/AddFriendsScreen.js";
 
 const Stack = createStackNavigator();
 
@@ -13,10 +13,7 @@ export default function ProfileTab({ navigation }) {
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="FriendsScreen"
-        component={AddFriendsScreen}
-      />
+      <Stack.Screen name="FriendsScreen" component={AddFriendsScreen} />
     </Stack.Navigator>
   );
 }

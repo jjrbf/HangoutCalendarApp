@@ -8,8 +8,16 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
-import { db, auth } from "../firebaseConfig";
-import { getDocs, query, collection, where, updateDoc, arrayUnion, doc } from "firebase/firestore";
+import { db, auth } from "../../firebaseConfig";
+import {
+  getDocs,
+  query,
+  collection,
+  where,
+  updateDoc,
+  arrayUnion,
+  doc,
+} from "firebase/firestore";
 
 export default function FriendsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +76,10 @@ export default function FriendsScreen({ navigation }) {
             <View style={styles.resultItem}>
               <Text style={styles.resultName}>{item.name}</Text>
               <Text style={styles.resultUsername}>@{item.username}</Text>
-              <Button title="Add Friend" onPress={() => handleAddFriend(item.id)} />
+              <Button
+                title="Add Friend"
+                onPress={() => handleAddFriend(item.id)}
+              />
             </View>
           )}
         />

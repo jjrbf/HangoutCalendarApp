@@ -2,17 +2,18 @@ import React, { useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
-import { auth } from "../firebaseConfig";
+import { auth } from "../../firebaseConfig";
 import Geocoder from "react-native-geocoding";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
-import { GOOGLE_MAPS_API_KEY } from "../config";
+import { GOOGLE_MAPS_API_KEY } from "../../config";
 
-export default function SetLocationScreen({ navigation }) {
+export default function SetLocationScreen({ route, navigation }) {
   const userId = auth.currentUser.uid;
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [searchLocation, setSearchLocation] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const { calendarId, shared } = route.params;
 
   Geocoder.init(GOOGLE_MAPS_API_KEY);
 
@@ -72,6 +73,8 @@ export default function SetLocationScreen({ navigation }) {
     if (selectedLocation) {
       navigation.navigate("AddEvent", {
         selectedLocation, // Pass the selected location back to AddEventScreen
+        calendarId: calendarId,
+        shared: shared,
       });
     } else {
       Alert.alert("Error", "Please select a location first.");

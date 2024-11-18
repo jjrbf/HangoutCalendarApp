@@ -1,11 +1,11 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import SharedCalendarScreen from "./SharedCalendarScreen.js";
-import CalendarScreen from "./CalendarScreen.js";
-import CreateCalendarScreen from "./CreateCalendarScreen.js";
-import AddSharedEventScreen from "./AddSharedEventScreen.js";
-import EventDetailsScreen from "./EventDetailsScreen.js";
-import SetLocationSharedScreen from "./SetLocationSharedScreen.js";
+import SharedCalendarScreen from "./SharedCalendarTab/SharedCalendarScreen.js";
+import CalendarScreen from "./SharedCalendarTab/CalendarScreen.js";
+import CreateCalendarScreen from "./SharedCalendarTab/CreateCalendarScreen.js";
+import AddEventScreen from "./EventRelated/AddEventScreen.js";
+import EventDetailsScreen from "./EventRelated/EventDetailsScreen.js";
+import SetLocationScreen from "./EventRelated/SetLocationScreen.js";
 
 const Stack = createStackNavigator();
 
@@ -17,28 +17,11 @@ export default function ProfileTab({ navigation }) {
         component={SharedCalendarScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="Calendar"
-        component={CalendarScreen}
-      />
-      <Stack.Screen
-        name="CreateCalendar"
-        component={CreateCalendarScreen}
-      />
-      <Stack.Screen
-        name="AddSharedEvent"
-        component={AddSharedEventScreen}
-      />
-      <Stack.Screen
-        name="SetLocationShared"
-        component={SetLocationSharedScreen}
-      />
-      <Stack.Screen
-        name="EventDetails"
-        component={EventDetailsScreen}
-      />
+      <Stack.Screen name="Calendar" component={CalendarScreen} />
+      <Stack.Screen name="CreateCalendar" component={CreateCalendarScreen} />
+      <Stack.Screen name="AddEvent" component={AddEventScreen} />
+      <Stack.Screen name="SetLocation" component={SetLocationScreen} />
+      <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
     </Stack.Navigator>
   );
-  
-        
 }

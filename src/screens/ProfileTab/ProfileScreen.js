@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth, db } from "../firebaseConfig";
+import { auth, db } from "../../firebaseConfig";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
 

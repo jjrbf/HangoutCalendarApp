@@ -10,7 +10,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
-import { db, auth } from "../firebaseConfig";
+import { db, auth } from "../../firebaseConfig";
 import {
   collection,
   getDocs,
@@ -18,7 +18,7 @@ import {
   doc,
   addDoc,
   query,
-  where
+  where,
 } from "firebase/firestore";
 
 export default function CreateCalendarScreen({ navigation }) {

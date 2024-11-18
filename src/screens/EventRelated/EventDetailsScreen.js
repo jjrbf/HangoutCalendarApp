@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert } from "react-native";
-import { db, auth } from "../firebaseConfig";
+import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import MapView, { Marker } from "react-native-maps";
 
@@ -11,10 +11,18 @@ export default function EventDetailsScreen({ route, navigation }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log(shared)
+    console.log(shared);
     const fetchEventDetails = async () => {
       try {
-        const eventDoc = shared ? doc(db, "calendars", calendarId, "events", eventId) : doc(db, "calendars", `personal_calendar_${auth.currentUser.uid}`, "events", eventId);
+        const eventDoc = shared
+          ? doc(db, "calendars", calendarId, "events", eventId)
+          : doc(
+              db,
+              "calendars",
+              `personal_calendar_${auth.currentUser.uid}`,
+              "events",
+              eventId
+            );
         const eventSnapshot = await getDoc(eventDoc);
         if (eventSnapshot.exists()) {
           const eventData = eventSnapshot.data();
@@ -54,9 +62,15 @@ export default function EventDetailsScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.detailsContainer}>
         <Text style={styles.eventTitle}>{event.title}</Text>
-        <Text style={styles.eventDetail}>{`Start: ${event.startDate.toLocaleString()}`}</Text>
-        <Text style={styles.eventDetail}>{`End: ${event.endDate.toLocaleString()}`}</Text>
-        <Text style={styles.eventDetail}>{`Description: ${event.description}`}</Text>
+        <Text
+          style={styles.eventDetail}
+        >{`Start: ${event.startDate.toLocaleString()}`}</Text>
+        <Text
+          style={styles.eventDetail}
+        >{`End: ${event.endDate.toLocaleString()}`}</Text>
+        <Text
+          style={styles.eventDetail}
+        >{`Description: ${event.description}`}</Text>
 
         {event.location && (
           <View style={styles.mapContainer}>
@@ -70,7 +84,12 @@ export default function EventDetailsScreen({ route, navigation }) {
                 longitudeDelta: 0.0421,
               }}
             >
-              <Marker coordinate={{ latitude: event.location.latitude, longitude: event.location.longitude }} />
+              <Marker
+                coordinate={{
+                  latitude: event.location.latitude,
+                  longitude: event.location.longitude,
+                }}
+              />
             </MapView>
           </View>
         )}

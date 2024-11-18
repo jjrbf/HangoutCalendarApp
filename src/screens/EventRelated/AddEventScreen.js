@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
-import { db, auth } from "../firebaseConfig";
+import { db, auth } from "../../firebaseConfig";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -19,6 +19,7 @@ export default function AddEventScreen({ route, navigation }) {
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [location, setLocation] = useState(null); // Holds selected location data
+  const { calendarId, shared } = route.params;
 
   useEffect(() => {
     // Retrieve location from route params if set in SetLocationScreen
@@ -28,11 +29,13 @@ export default function AddEventScreen({ route, navigation }) {
 
     const fetchEvents = async () => {
       try {
-        const calendarId = `personal_calendar_${userId}`;
+        const calendarIdToSet = shared
+          ? calendarId
+          : `personal_calendar_${userId}`;
         const eventsCollection = collection(
           db,
           "calendars",
-          calendarId,
+          calendarIdToSet,
           "events"
         );
         const eventsSnapshot = await getDocs(eventsCollection);
@@ -68,8 +71,13 @@ export default function AddEventScreen({ route, navigation }) {
     };
 
     try {
-      const calendarId = `personal_calendar_${userId}`;
-      await addDoc(collection(db, "calendars", calendarId, "events"), newEvent);
+      const calendarIdToSet = shared
+        ? calendarId
+        : `personal_calendar_${userId}`;
+      await addDoc(
+        collection(db, "calendars", calendarIdToSet, "events"),
+        newEvent
+      );
       setEvents((prevEvents) => [...prevEvents, newEvent]);
       Alert.alert("Success", "Event added successfully!");
 
@@ -79,7 +87,9 @@ export default function AddEventScreen({ route, navigation }) {
       setStartDate(new Date());
       setEndDate(new Date());
       setLocation(null);
-      navigation.navigate("MyCalendarScreen");
+      navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+        calendarId: calendarId,
+      });
     } catch (error) {
       console.error("Error adding event: ", error);
       Alert.alert("Error", "Could not add event.");
@@ -90,7 +100,11 @@ export default function AddEventScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <Button
         title="Back to Screen"
-        onPress={() => navigation.navigate("MyCalendarScreen")}
+        onPress={() =>
+          navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+            calendarId,
+          })
+        }
       />
       <View style={styles.formContainer}>
         <TextInput
@@ -191,7 +205,12 @@ export default function AddEventScreen({ route, navigation }) {
         </Text>
         <Button
           title="Set Location"
-          onPress={() => navigation.navigate("SetLocation")}
+          onPress={() =>
+            navigation.navigate("SetLocation", {
+              calendarId: calendarId,
+              shared: shared,
+            })
+          }
         />
 
         <Button title="Add Event" onPress={handleAddEvent} />
