@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { auth } from "../firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
@@ -55,13 +55,14 @@ export default function SignUpScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.signInContainer}>
-      <Text>Sign Up</Text>
+    <View style={styles.signUpContainer}>
+      <Text style={styles.title}>Sign Up</Text>
       <TextInput
         placeholder="Name"
         value={name}
         onChangeText={setName}
         style={styles.input}
+        placeholderTextColor="#888"
       />
       <TextInput
         placeholder="Email"
@@ -69,6 +70,7 @@ export default function SignUpScreen({ navigation }) {
         onChangeText={setEmail}
         keyboardType="email-address"
         style={styles.input}
+        placeholderTextColor="#888"
       />
       <TextInput
         placeholder="Password"
@@ -76,28 +78,72 @@ export default function SignUpScreen({ navigation }) {
         onChangeText={setPassword}
         secureTextEntry
         style={styles.input}
+        placeholderTextColor="#888"
       />
-      <Button title="Sign Up" onPress={handleSignUp} />
-      <Button
-        title="Already have an account? Sign In"
-        onPress={() => navigation.navigate("SignIn")}
-      />
+      <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
+        <Text style={styles.signUpButtonText}>Sign Up</Text>
+      </TouchableOpacity>
+      <View style={styles.signInContainer}>
+        <Text style={styles.signInText}>Already have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
+          <Text style={styles.highlightedSignInText}>Sign In</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  signInContainer: {
+  signUpContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingLeft: 10,
-    paddingRight: 10,
+    alignItems: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
   },
   input: {
-    height: 40,
-    borderColor: "gray",
+    width: "100%",
+    padding: 15,
     borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
     marginBottom: 15,
-    paddingLeft: 10,
+    backgroundColor: "#fff",
+    fontSize: 16,
+  },
+  signUpButton: {
+    width: "100%",
+    padding: 15,
+    backgroundColor: "#007BFF",
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  signUpButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  signInContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  signInText: {
+    fontSize: 14,
+    color: "#888",
+  },
+  highlightedSignInText: {
+    fontSize: 14,
+    color: "#007BFF",
+    fontWeight: "bold",
+    marginLeft: 5,
+    textDecorationLine: "underline",
   },
 });
