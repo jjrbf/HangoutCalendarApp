@@ -6,14 +6,15 @@ import { doc, getDoc } from "firebase/firestore";
 import MapView, { Marker } from "react-native-maps";
 
 export default function EventDetailsScreen({ route, navigation }) {
-  const { eventId } = route.params; // Get the eventId passed from MyCalendarScreen
+  const { eventId, shared, calendarId } = route.params; // Get the eventId passed from MyCalendarScreen
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log(shared)
     const fetchEventDetails = async () => {
       try {
-        const eventDoc = doc(db, "calendars", `personal_calendar_${auth.currentUser.uid}`, "events", eventId);
+        const eventDoc = shared ? doc(db, "calendars", calendarId, "events", eventId) : doc(db, "calendars", `personal_calendar_${auth.currentUser.uid}`, "events", eventId);
         const eventSnapshot = await getDoc(eventDoc);
         if (eventSnapshot.exists()) {
           const eventData = eventSnapshot.data();

@@ -1,53 +1,89 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { auth } from "../firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 
-const db = getFirestore(); // Initialize Firestore
+const db = getFirestore();
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [validUser, setUsernameValid] = useState(false);
+  const [usernameMessage, setUsernameMessage] = useState("");
+
+  useEffect(() => {
+    async function checkUsername(username) {
+      const usernameRegex = /^[A-Za-z0-9_]{5,}$/;
+
+      if (!usernameRegex.test(username)) {
+        setUsernameValid(false);
+        setUsernameMessage("Username must be at least 5 characters and contain only letters, numbers, or underscores.");
+        return;
+      }
+
+      try {
+        const usersCollection = collection(db, "users");
+        const q = query(usersCollection, where("username", "==", username));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          setUsernameValid(true);
+          setUsernameMessage("Username is available!");
+        } else {
+          setUsernameValid(false);
+          setUsernameMessage("Username is already taken. Please choose another.");
+        }
+      } catch (error) {
+        console.error("Error checking username:", error);
+        Alert.alert("Error", "Could not check username availability.");
+      }
+    }
+
+    if (username) {
+      checkUsername(username);
+    } else {
+      setUsernameValid(false);
+      setUsernameMessage("");
+    }
+  }, [username]);
 
   const handleSignUp = async () => {
-    // Field validation
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !username) {
       Alert.alert("Validation Error", "Please fill out all fields.");
       return;
     }
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+    if (!validUser) {
+      Alert.alert("Validation Error", "Username is either taken or invalid.");
+      return;
+    }
 
-      // Get the user's UID
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
 
-      // Create user document in the 'users' collection
       await setDoc(doc(db, "users", userId), {
         name: name,
+        username: username,
         email: email,
-        profilePicture: "", // or a default picture URL
+        profilePicture: "",
         friends: [],
         sharedCalendars: [],
       });
 
-      // Create a personal calendar for the user in the 'calendars' collection
-      const calendarId = `personal_calendar_${userId}`; // Unique calendar ID for the user's personal calendar
+      const calendarId = `personal_calendar_${userId}`;
       await setDoc(doc(db, "calendars", calendarId), {
         ownerId: userId,
         name: `${name}'s Personal Calendar`,
-        members: [userId], // Include the user as a member
-        createdAt: new Date(), // or use Firebase Timestamp
+        members: [userId],
+        createdAt: new Date(),
       });
 
       Alert.alert("Sign Up Success!", "Your account has been created.");
-      navigation.navigate("SignIn"); // Redirect to sign-in screen after successful sign-up
+      navigation.navigate("SignIn");
     } catch (error) {
       console.error("Sign Up Error:", error);
       Alert.alert("Sign Up Failed", error.message);
@@ -57,6 +93,17 @@ export default function SignUpScreen({ navigation }) {
   return (
     <View style={styles.signUpContainer}>
       <Text style={styles.title}>Sign Up</Text>
+      <TextInput
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+        style={styles.input}
+      />
+      {usernameMessage ? (
+        <Text style={{ color: validUser ? "green" : "red", marginBottom: 10 }}>
+          {usernameMessage}
+        </Text>
+      ) : null}
       <TextInput
         placeholder="Name"
         value={name}
@@ -111,9 +158,10 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 15,
     borderWidth: 1,
+    marginBottom: 10,
+    paddingLeft: 10,
     borderColor: "#ccc",
     borderRadius: 10,
-    marginBottom: 15,
     backgroundColor: "#fff",
     fontSize: 16,
   },
