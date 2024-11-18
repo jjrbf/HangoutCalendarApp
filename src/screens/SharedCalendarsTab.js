@@ -33,6 +33,10 @@ export default function ProfileTab({ navigation }) {
         name="SetLocationShared"
         component={SetLocationSharedScreen}
       />
+      <Stack.Screen
+        name="EventDetails"
+        component={EventDetailsScreen}
+      />
     </Stack.Navigator>
   );
   

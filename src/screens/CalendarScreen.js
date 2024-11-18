@@ -84,12 +84,13 @@ export default function CalendarScreen({ route, navigation }) {
   );
 
   const renderEvent = ({ item }) => (
-    <View style={styles.eventItem}>
+    <TouchableOpacity style={styles.eventItem} onPress={() =>
+      navigation.navigate("EventDetails", { eventId: item.id, shared: true, calendarId: calendarId })}>
       <Text style={styles.eventTitle}>{item.title}</Text>
       <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
       <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
       <Text style={styles.eventDescription}>{item.description}</Text>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
