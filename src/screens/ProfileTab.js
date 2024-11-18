@@ -2,18 +2,20 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import ProfileScreen from "./ProfileTab/ProfileScreen.js";
 import AddFriendsScreen from "./ProfileTab/AddFriendsScreen.js";
+import SettingsScreen from "./ProfileTab/SettingsScreen.js";
 
 const Stack = createStackNavigator();
 
 export default function ProfileTab({ navigation }) {
   return (
-    <Stack.Navigator initialRouteName="ProfileScreen">
+    <Stack.Navigator initialRouteName="Profile">
       <Stack.Screen
-        name="ProfileScreen"
+        name="Profile"
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="FriendsScreen" component={AddFriendsScreen} />
+      <Stack.Screen name="AddFriends" component={AddFriendsScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }
