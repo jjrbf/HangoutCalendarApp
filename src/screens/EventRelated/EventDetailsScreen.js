@@ -11,7 +11,6 @@ export default function EventDetailsScreen({ route, navigation }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log(shared);
     const fetchEventDetails = async () => {
       try {
         const eventDoc = shared
