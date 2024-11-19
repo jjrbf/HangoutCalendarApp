@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Text,
@@ -10,62 +10,57 @@ import {
 } from "react-native";
 import { auth, db } from "../../firebaseConfig"; // Import Firebase config
 import { collection, query, where, getDocs } from "firebase/firestore"; // Firestore functions
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function SharedCalendarScreen({ navigation }) {
   const [calendars, setCalendars] = useState([]);
   const [ownedCalendars, setOwnedCalendars] = useState([]);
   const userId = auth.currentUser.uid;
 
-  useEffect(() => {
-    const fetchSharedCalendars = async () => {
-      try {
-        const calendarsCollection = collection(db, "calendars");
-        const q = query(
-          calendarsCollection,
-          where("members", "array-contains", userId)
-        );
-        const querySnapshot = await getDocs(q);
+  const fetchSharedCalendars = async () => {
+    try {
+      const calendarsCollection = collection(db, "calendars");
+      let q = query(
+        calendarsCollection,
+        where("members", "array-contains", userId)
+      );
+      let querySnapshot = await getDocs(q);
 
-        // Exclude calendars with prefix "personal_calendar_"
-        const fetchedCalendars = querySnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
+      // Exclude calendars with prefix "personal_calendar_"
+      let fetchedCalendars = querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
 
-        setCalendars(fetchedCalendars);
-      } catch (error) {
-        console.error("Error fetching shared calendars:", error);
-      }
-    };
+      setCalendars(fetchedCalendars);
 
-    fetchSharedCalendars();
-  }, [userId]);
+      // NEED TO FIX THIS REDUNDANT CODE
 
-  useEffect(() => {
-    const fetchSharedCalendars = async () => {
-      try {
-        const calendarsCollection = collection(db, "calendars");
-        const q = query(calendarsCollection, where("ownerId", "==", userId));
-        const querySnapshot = await getDocs(q);
+      q = query(calendarsCollection, where("ownerId", "==", userId));
+      querySnapshot = await getDocs(q);
 
-        // Exclude calendars with prefix "personal_calendar_"
-        const fetchedCalendars = querySnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
+      // Exclude calendars with prefix "personal_calendar_"
+      fetchedCalendars = querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
 
-        setOwnedCalendars(fetchedCalendars);
-      } catch (error) {
-        console.error("Error fetching shared calendars:", error);
-      }
-    };
+      setOwnedCalendars(fetchedCalendars);
+    } catch (error) {
+      console.error("Error fetching shared calendars:", error);
+    }
+  };
 
-    fetchSharedCalendars();
-  }, [userId]);
+  // Refresh data when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchSharedCalendars();
+    }, [userId])
+  );
 
   const renderCalendar = ({ item }) => (
     <TouchableOpacity

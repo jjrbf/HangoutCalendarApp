@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Text,
   Button,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "../../firebaseConfig";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
@@ -19,42 +20,44 @@ export default function ProfileScreen({ navigation }) {
   const [friends, setFriends] = useState([]);
   const userId = auth.currentUser.uid;
 
-  // Fetch user data from Firestore
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, "users", userId));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setName(userData.name);
-          setUsername(userData.username);
+  const fetchUserData = async () => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setName(userData.name);
+        setUsername(userData.username);
 
-          // Fetch friends details
-          const friendUids = userData.friends || [];
-          const friendPromises = friendUids.map((friendUid) =>
-            getDoc(doc(db, "users", friendUid))
-          );
-          const friendDocs = await Promise.all(friendPromises);
+        // Fetch friends details
+        const friendUids = userData.friends || [];
+        const friendPromises = friendUids.map((friendUid) =>
+          getDoc(doc(db, "users", friendUid))
+        );
+        const friendDocs = await Promise.all(friendPromises);
 
-          const friendList = friendDocs
-            .filter((doc) => doc.exists())
-            .map((doc) => ({
-              id: doc.id,
-              name: doc.data().name,
-              username: doc.data().username,
-            }));
+        const friendList = friendDocs
+          .filter((doc) => doc.exists())
+          .map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            username: doc.data().username,
+          }));
 
-          setFriends(friendList);
-        } else {
-          console.error("No such user document!");
-        }
-      } catch (error) {
-        console.error("Error fetching user data: ", error);
+        setFriends(friendList);
+      } else {
+        console.error("No such user document!");
       }
-    };
+    } catch (error) {
+      console.error("Error fetching user data: ", error);
+    }
+  };
 
-    fetchUserData();
-  }, [userId]); // Fetch user data when userId changes
+  // Refresh data when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [userId])
+  );
 
   const handleRemoveFriend = async (friendId) => {
     Alert.alert(
