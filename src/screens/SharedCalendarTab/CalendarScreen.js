@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { auth, db } from "../../firebaseConfig";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function CalendarScreen({ route, navigation }) {
   const { calendarId } = route.params; // Get the calendarId from route params
@@ -18,56 +19,58 @@ export default function CalendarScreen({ route, navigation }) {
   const [members, setMembers] = useState([]);
   const [events, setEvents] = useState([]);
 
-  // Fetch calendar, owner, members, and events
-  useEffect(() => {
-    const fetchCalendarDetails = async () => {
-      try {
-        const calendarRef = doc(db, "calendars", calendarId);
-        const calendarDoc = await getDoc(calendarRef);
+  const fetchCalendarDetails = async () => {
+    try {
+      const calendarRef = doc(db, "calendars", calendarId);
+      const calendarDoc = await getDoc(calendarRef);
 
-        if (!calendarDoc.exists()) {
-          Alert.alert("Error", "Calendar not found.");
-          return;
-        }
-
-        const calendarData = calendarDoc.data();
-        setCalendar(calendarData);
-
-        // Fetch owner details
-        const ownerRef = doc(db, "users", calendarData.ownerId);
-        const ownerDoc = await getDoc(ownerRef);
-        if (ownerDoc.exists()) {
-          setOwner({ id: calendarData.ownerId, ...ownerDoc.data() });
-        }
-
-        // Fetch members' details
-        const memberDetails = await Promise.all(
-          calendarData.members.map(async (memberId) => {
-            const memberRef = doc(db, "users", memberId);
-            const memberDoc = await getDoc(memberRef);
-            return memberDoc.exists()
-              ? { id: memberId, ...memberDoc.data() }
-              : null;
-          })
-        );
-        setMembers(memberDetails.filter((member) => member)); // Filter out null values
-
-        // Fetch events
-        const eventsRef = collection(db, "calendars", calendarId, "events");
-        const eventsSnapshot = await getDocs(eventsRef);
-        const fetchedEvents = eventsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setEvents(fetchedEvents);
-      } catch (error) {
-        console.error("Error fetching calendar details:", error);
-        Alert.alert("Error", "Unable to fetch calendar details.");
+      if (!calendarDoc.exists()) {
+        Alert.alert("Error", "Calendar not found.");
+        return;
       }
-    };
 
-    fetchCalendarDetails();
-  }, [calendarId]);
+      const calendarData = calendarDoc.data();
+      setCalendar(calendarData);
+
+      // Fetch owner details
+      const ownerRef = doc(db, "users", calendarData.ownerId);
+      const ownerDoc = await getDoc(ownerRef);
+      if (ownerDoc.exists()) {
+        setOwner({ id: calendarData.ownerId, ...ownerDoc.data() });
+      }
+
+      // Fetch members' details
+      const memberDetails = await Promise.all(
+        calendarData.members.map(async (memberId) => {
+          const memberRef = doc(db, "users", memberId);
+          const memberDoc = await getDoc(memberRef);
+          return memberDoc.exists()
+            ? { id: memberId, ...memberDoc.data() }
+            : null;
+        })
+      );
+      setMembers(memberDetails.filter((member) => member)); // Filter out null values
+
+      // Fetch events
+      const eventsRef = collection(db, "calendars", calendarId, "events");
+      const eventsSnapshot = await getDocs(eventsRef);
+      const fetchedEvents = eventsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setEvents(fetchedEvents);
+    } catch (error) {
+      console.error("Error fetching calendar details:", error);
+      Alert.alert("Error", "Unable to fetch calendar details.");
+    }
+  };
+
+  // Refresh data when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchCalendarDetails();
+    }, [calendarId])
+  );
 
   const renderMember = ({ item }) => (
     <View

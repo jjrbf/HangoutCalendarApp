@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, FlatList, StyleSheet, Alert } from "react-native";
 import { db, auth } from "../../firebaseConfig";
@@ -8,20 +8,16 @@ import {
   addDoc,
   doc,
   deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { CalendarSwitcher } from "../../components";
-import { Timestamp } from "firebase/firestore";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
   const userId = auth.currentUser.uid;
 
-  // State variables for new event
-  const [eventTitle, setEventTitle] = useState("");
-  const [eventDescription, setEventDescription] = useState("");
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-
+  // Fetch events from Firestore
   const fetchEvents = async () => {
     try {
       const calendarId = `personal_calendar_${userId}`;
@@ -43,6 +39,7 @@ export default function MyCalendarScreen({ route, navigation }) {
           description: data.description,
         };
       });
+
       setEvents(eventsList);
     } catch (error) {
       console.error("Error fetching events: ", error);
@@ -50,9 +47,12 @@ export default function MyCalendarScreen({ route, navigation }) {
     }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, [userId]);
+  // Use useFocusEffect to fetch events whenever the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchEvents();
+    }, [userId])
+  );
 
   const handleAddEvent = async () => {
     const newEvent = {
@@ -116,9 +116,12 @@ export default function MyCalendarScreen({ route, navigation }) {
       <CalendarSwitcher />
       <Button
         title="Add Event"
-        onPress={() => navigation.navigate("AddEvent", {calendarId: `personal_calendar_${userId}`})}
+        onPress={() =>
+          navigation.navigate("AddEvent", {
+            calendarId: `personal_calendar_${userId}`,
+          })
+        }
       />
-      <Button title="Refresh Events" onPress={fetchEvents} />
       <View style={styles.eventsContainer}>
         <FlatList
           data={events}
