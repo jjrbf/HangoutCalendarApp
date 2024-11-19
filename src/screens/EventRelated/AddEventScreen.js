@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../../firebaseConfig";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -18,48 +19,90 @@ export default function AddEventScreen({ route, navigation }) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [originalDraft, setOriginalDraft] = useState({
+    eventTitle: "",
+    eventDescription: "",
+    startDate: new Date(),
+    endDate: new Date(),
+  }); // to check if the draft has been changed
+  const [changed, setChanged] = useState(false);
   const [location, setLocation] = useState(null); // Holds selected location data
   const { calendarId, shared } = route.params;
+  const draftKey = `event_draft_${userId}_${shared ? calendarId : "personal"}`; // different keys for each calendar
+
+  // Load draft when the screen is loaded
+  useEffect(() => {
+    const loadDraft = async () => {
+      try {
+        const draft = await AsyncStorage.getItem(draftKey);
+        if (draft) {
+          const parsedDraft = JSON.parse(draft);
+          setEventTitle(parsedDraft.eventTitle || "");
+          setEventDescription(parsedDraft.eventDescription || "");
+          setStartDate(new Date(parsedDraft.startDate || new Date()));
+          setEndDate(new Date(parsedDraft.endDate || new Date()));
+
+          // Save draft to a reference state for comparison
+          setOriginalDraft({
+            eventTitle: parsedDraft.eventTitle || "",
+            eventDescription: parsedDraft.eventDescription || "",
+            startDate: new Date(parsedDraft.startDate || new Date()),
+            endDate: new Date(parsedDraft.endDate || new Date()),
+          });
+        }
+      } catch (error) {
+        console.error("Error loading draft: ", error);
+      }
+    };
+
+    loadDraft();
+  }, []);
+
+  // Save draft when any field changes
+  useEffect(() => {
+    const saveDraft = async () => {
+      const draft = {
+        eventTitle,
+        eventDescription,
+        startDate,
+        endDate,
+      };
+      try {
+        await AsyncStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch (error) {
+        console.error("Error saving draft: ", error);
+      }
+    };
+    const checkIfChanged = () => {
+      const hasChanged =
+        eventTitle !== originalDraft.eventTitle ||
+        eventDescription !== originalDraft.eventDescription ||
+        startDate.getTime() !== originalDraft.startDate.getTime() ||
+        endDate.getTime() !== originalDraft.endDate.getTime();
+
+      setChanged(hasChanged);
+    };
+
+    checkIfChanged();
+    saveDraft();
+  }, [eventTitle, eventDescription, startDate, endDate]);
+
+  // Clear draft after successful event submission
+  const clearDraft = async () => {
+    try {
+      await AsyncStorage.removeItem(draftKey);
+      setChanged(false);
+    } catch (error) {
+      console.error("Error clearing draft: ", error);
+    }
+  };
 
   useEffect(() => {
     // Retrieve location from route params if set in SetLocationScreen
     if (route.params?.selectedLocation) {
       setLocation(route.params.selectedLocation);
     }
-
-    const fetchEvents = async () => {
-      try {
-        const calendarIdToSet = shared
-          ? calendarId
-          : `personal_calendar_${userId}`;
-        const eventsCollection = collection(
-          db,
-          "calendars",
-          calendarIdToSet,
-          "events"
-        );
-        const eventsSnapshot = await getDocs(eventsCollection);
-
-        const eventsList = eventsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: data.title,
-            startDate: data.startDate.toDate(),
-            endDate: data.endDate.toDate(),
-            description: data.description,
-            location: data.location || null,
-          };
-        });
-        setEvents(eventsList);
-      } catch (error) {
-        console.error("Error fetching events: ", error);
-        Alert.alert("Error", "Could not fetch events.");
-      }
-    };
-
-    fetchEvents();
-  }, [userId, route.params?.selectedLocation]);
+  }, [userId]);
 
   const handleAddEvent = async () => {
     const newEvent = {
@@ -79,6 +122,7 @@ export default function AddEventScreen({ route, navigation }) {
         newEvent
       );
       setEvents((prevEvents) => [...prevEvents, newEvent]);
+      clearDraft();
       Alert.alert("Success", "Event added successfully!");
 
       // Reset fields after adding the event
@@ -96,16 +140,43 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
+  const handleLeaveScreen = () => {
+    if (changed) {
+      Alert.alert(
+        "Keep Draft?",
+        "You haven't finished filling out your event. Would you like to keep a draft for later?",
+        [
+          {
+            text: "Delete Draft",
+            onPress: () => {
+              clearDraft();
+              navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+                calendarId,
+              });
+            },
+            style: "cancel",
+          },
+          {
+            text: "Keep Draft",
+            onPress: () => {
+              console.log(`Draft Kept at ${draftKey}`);
+              navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+                calendarId,
+              });
+            },
+          },
+        ]
+      );
+    } else {
+      navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+        calendarId,
+      });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Button
-        title="Back to Screen"
-        onPress={() =>
-          navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
-            calendarId,
-          })
-        }
-      />
+      <Button title="Back to Screen" onPress={() => handleLeaveScreen()} />
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
