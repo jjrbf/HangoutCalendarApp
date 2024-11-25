@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { auth, db } from "../../firebaseConfig";
+import { ProfilePicture } from "../../components";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -79,10 +80,13 @@ export default function CalendarScreen({ route, navigation }) {
         item.id === calendar?.ownerId ? styles.ownerItem : {},
       ]}
     >
-      <Text style={styles.memberName}>
-        {item.name} {item.id === calendar?.ownerId && "(Owner)"}
-      </Text>
-      <Text style={styles.memberUsername}>@{item.username}</Text>
+      <ProfilePicture userId={item.id} size={50} />
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>
+          {item.name} {item.id === calendar?.ownerId && "(Owner)"}
+        </Text>
+        <Text style={styles.memberUsername}>@{item.username}</Text>
+      </View>
     </View>
   );
 
@@ -169,6 +173,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   memberItem: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
     padding: 8,
     backgroundColor: "#f0f0f0",
     borderRadius: 8,

@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, FlatList } from "react-native";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
+import { ProfilePicture } from "../../components";
 import MapView, { Marker } from "react-native-maps";
 
 export default function EventDetailsScreen({ route, navigation }) {
@@ -98,10 +99,13 @@ export default function EventDetailsScreen({ route, navigation }) {
         item.id === calendar?.ownerId ? styles.ownerItem : {},
       ]}
     >
-      <Text style={styles.memberName}>
-        {item.name} {item.id === calendar?.ownerId && "(Owner)"}
-      </Text>
-      <Text style={styles.memberUsername}>@{item.username}</Text>
+      <ProfilePicture userId={item.id} size={50} />
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>
+          {item.name} {item.id === calendar?.ownerId && "(Owner)"}
+        </Text>
+        <Text style={styles.memberUsername}>@{item.username}</Text>
+      </View>
     </View>
   );
 
@@ -206,6 +210,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   memberItem: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
     padding: 8,
     backgroundColor: "#f0f0f0",
     borderRadius: 8,
