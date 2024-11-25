@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../../firebaseConfig";
+import { Timetable } from "../../components";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -174,8 +175,13 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
+  const handleTimeChange = (startDate, endDate) => {
+    setStartDate(startDate);
+    setEndDate(endDate);
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Button title="Back to Screen" onPress={() => handleLeaveScreen()} />
       <View style={styles.formContainer}>
         <TextInput
@@ -189,6 +195,11 @@ export default function AddEventScreen({ route, navigation }) {
           placeholder="Event Description"
           value={eventDescription}
           onChangeText={setEventDescription}
+        />
+
+        <Timetable
+          calendarId={calendarId}
+          onTimeChange={handleTimeChange}
         />
 
         <Button
@@ -286,7 +297,7 @@ export default function AddEventScreen({ route, navigation }) {
 
         <Button title="Add Event" onPress={handleAddEvent} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
