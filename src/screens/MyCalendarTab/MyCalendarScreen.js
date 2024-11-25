@@ -1,6 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, FlatList, StyleSheet, Alert } from "react-native";
+import { View, Text, Button, FlatList, StyleSheet, Alert, Linking, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { CalendarSwitcher } from "../../components";
@@ -10,9 +12,61 @@ export default function MyCalendarScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
+  const [deviceCalendarEvents, setDeviceCalendarEvents] = useState([]);
   const userId = auth.currentUser.uid;
 
-  // Fetch events from both personal and shared calendars
+  // Fetch device calendar events
+  useEffect(() => {
+    const fetchStoredCalendar = async () => {
+      try {
+        const storedCalendar = await AsyncStorage.getItem(
+          "@device_calendar_imported"
+        );
+
+        if (storedCalendar) {
+          const selectedCalendar = JSON.parse(storedCalendar); // Parse the stored calendar
+          const { status } = await Calendar.requestCalendarPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert(
+              "Permission Denied",
+              "You need to allow access to your calendar."
+            );
+            return;
+          }
+          const now = new Date();
+          const oneDayBefore = new Date(now.getTime() - 1000 * 60 * 60 * 24);
+          const oneMonthAfter = new Date(
+            now.getTime() + 1000 * 60 * 60 * 24 * 30
+          );
+
+          const eventsList = await Calendar.getEventsAsync(
+            [selectedCalendar.id], // Use selected calendar ID
+            oneDayBefore,
+            oneMonthAfter
+          );
+
+          const formattedEvents = eventsList.map((event) => ({
+            id: event.id,
+            calendarId: selectedCalendar.id,
+            title: event.title,
+            startDate: new Date(event.startDate),
+            endDate: new Date(event.endDate),
+            description: event.notes || "",
+            shared: false, // Device events are considered personal
+            deviceEvent: true, // Tag for device calendar events
+          }));
+
+          setDeviceCalendarEvents(formattedEvents);
+        }
+      } catch (error) {
+        console.error("Error loading stored calendar:", error);
+      }
+    };
+
+    fetchStoredCalendar();
+  }, []);
+
+  // Fetch personal and shared events
   const fetchEvents = async () => {
     try {
       // User's personal calendar
@@ -77,7 +131,12 @@ export default function MyCalendarScreen({ route, navigation }) {
 
       const sharedEvents = (await Promise.all(sharedEventsPromises)).flat();
 
-      const allEvents = [...personalEvents, ...sharedEvents];
+      // Combine personal, shared, and device calendar events
+      const allEvents = [
+        ...personalEvents,
+        ...sharedEvents,
+        ...deviceCalendarEvents,
+      ];
       setEvents(allEvents);
       filterEvents(allEvents, selectedDate);
     } catch (error) {
@@ -86,6 +145,7 @@ export default function MyCalendarScreen({ route, navigation }) {
     }
   };
 
+  // Filter events by selected day
   const filterEvents = (eventsList, date) => {
     const filtered = eventsList.filter(
       (event) => event.startDate.toDateString() === date.toDateString() // Match only the selected day
@@ -98,7 +158,7 @@ export default function MyCalendarScreen({ route, navigation }) {
     filterEvents(events, date);
   };
 
-  const handleDeleteEvent = async (eventId) => {
+  const handleDeleteEvent = async (eventId, calendarId, shared) => {
     Alert.alert(
       "Delete Event",
       "Are you sure you want to delete this event?",
@@ -112,7 +172,7 @@ export default function MyCalendarScreen({ route, navigation }) {
               const eventDoc = doc(
                 db,
                 "calendars",
-                `personal_calendar_${userId}`,
+                shared ? calendarId : `personal_calendar_${userId}`,
                 "events",
                 eventId
               );
@@ -135,7 +195,7 @@ export default function MyCalendarScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
-    }, [userId])
+    }, [userId, deviceCalendarEvents])
   );
 
   return (
@@ -152,11 +212,16 @@ export default function MyCalendarScreen({ route, navigation }) {
       <View style={styles.eventsContainer}>
         <FlatList
           data={filteredEvents}
-          keyExtractor={(item) => `${item.calendarId}_${item.id}`} // Unique key
+          keyExtractor={(item) => `${item.calendarId}_${item.id}`}
           renderItem={({ item }) => (
             <View style={styles.eventItem}>
               <Text style={styles.eventTitle}>
-                {item.title} {item.shared ? "(Shared)" : "(Personal)"}
+                {item.title}{" "}
+                {item.shared
+                  ? "(Shared)"
+                  : item.deviceEvent
+                  ? "(Device)"
+                  : "(Personal)"}
               </Text>
               <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
               <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
@@ -164,18 +229,39 @@ export default function MyCalendarScreen({ route, navigation }) {
               <View style={styles.buttonContainer}>
                 <Button
                   title="See More"
-                  onPress={() =>
-                    navigation.navigate("EventDetails", {
-                      eventId: item.id,
-                      calendarId: item.calendarId,
-                      shared: item.shared,
-                    })
-                  }
+                  onPress={() => {
+                    if (item.deviceEvent) {
+                      // Redirect to native calendar for device events
+                      if (Platform.OS === "ios") {
+                        Linking.openURL(
+                          `calshow:${item.startDate.getTime() / 1000}`
+                        ); // Open iOS calendar event
+                      } else if (Platform.OS === "android") {
+                        Linking.openURL("content://com.android.calendar/time/"); // Open Android calendar app
+                      } else {
+                        Alert.alert(
+                          "Unsupported Platform",
+                          "Cannot open the calendar on this platform."
+                        );
+                      }
+                    } else {
+                      // Navigate to your EventDetails screen for non-device events
+                      navigation.navigate("EventDetails", {
+                        eventId: item.id,
+                        calendarId: item.calendarId,
+                        shared: item.shared,
+                      });
+                    }
+                  }}
                 />
-                <Button
-                  title="Delete"
-                  onPress={() => handleDeleteEvent(item.id)}
-                />
+                {!item.deviceEvent && (
+                  <Button
+                    title="Delete"
+                    onPress={() =>
+                      handleDeleteEvent(item.id, item.calendarId, item.shared)
+                    }
+                  />
+                )}
               </View>
             </View>
           )}
