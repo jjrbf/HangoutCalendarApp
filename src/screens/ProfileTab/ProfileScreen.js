@@ -59,17 +59,6 @@ export default function ProfileScreen({ navigation }) {
     }, [userId])
   );
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.navigate("SignIn");
-    } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Logout Failed", error.message);
-    }
-  };
-
   const handleRemoveFriend = async (friendId) => {
     Alert.alert(
       "Remove Friend",
@@ -133,9 +122,12 @@ export default function ProfileScreen({ navigation }) {
 
       <Button
         title="Add Friends"
-        onPress={() => navigation.navigate("FriendsScreen")}
+        onPress={() => navigation.navigate("AddFriends")}
       />
-      <Button title="Logout" onPress={handleLogout} />
+      <Button
+        title="Settings"
+        onPress={() => navigation.navigate("Settings")}
+      />
     </SafeAreaView>
   );
 }

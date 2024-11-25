@@ -2147,6 +2147,11 @@
   resolved "https://registry.yarnpkg.com/@react-native-firebase/firestore/-/firestore-21.3.0.tgz#7be505748f4efe996f8d5ed7a6934aeb75d3fe88"
   integrity sha512-b1bB8sXRM8ayAiU0zfcnsK6+JHWkdSuFfg0YZfejSibGgd4hStyc6thkoPXWmFPttvKydwvb5XnRO3vheR1PoA==
 
+"@react-native-picker/picker@^2.9.0":
+  version "2.9.0"
+  resolved "https://registry.yarnpkg.com/@react-native-picker/picker/-/picker-2.9.0.tgz#0a7053ca174ec697388cb79032fb4c1445554e07"
+  integrity sha512-khEhIW/uhfMqq/+tvg4rEAiPGT8GX+Y6QydlP2TSMSmRHoSJK+ShXvXZXSr4Sii4imkj4BwvLunGywwtQDODqg==
+
 "@react-native/assets-registry@0.76.2":
   version "0.76.2"
   resolved "https://registry.yarnpkg.com/@react-native/assets-registry/-/assets-registry-0.76.2.tgz#c3cf689b336e008bec3a80976ae6a92aa34d616b"
@@ -3539,6 +3544,11 @@ expo-asset@~11.0.1:
     expo-constants "~17.0.0"
     invariant "^2.2.4"
     md5-file "^3.2.3"
+
+expo-calendar@^14.0.2:
+  version "14.0.2"
+  resolved "https://registry.yarnpkg.com/expo-calendar/-/expo-calendar-14.0.2.tgz#9b83cf087e5520f7eb8b6a3d2208c7a254eb943b"
+  integrity sha512-fByyPGJvs8f2+8Pwmua03dIJ7bum5xKtQZeM9nZn+2XPOtwDoKAO52E8zwaBtP0nZSxTu7JY8z6IYZZRESpLoQ==
 
 expo-constants@~17.0.0, expo-constants@~17.0.3:
   version "17.0.3"
