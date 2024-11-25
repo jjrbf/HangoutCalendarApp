@@ -30,7 +30,7 @@ const generateDates = (year, startDayOfWeek) => {
   return dates;
 };
 
-const MonthView = () => {
+const MonthView = ({ onDateSelect }) => {
   const year = 2024; // Desired year
   const startDayOfWeek = 0; // Start the week on Sunday
   const calendarDays = generateDates(year, startDayOfWeek);
@@ -52,11 +52,11 @@ const MonthView = () => {
     return null;
   };
 
-  // Log the selected date in 'year, month, day' format
   const logSelectedDate = (index) => {
     const selectedDay = calendarDays[index];
-    const month = todayMonth + 1; // Months are zero-based
-    console.log(`${year}, ${month}, ${selectedDay}`);
+    const month = todayMonth; // Zero-based
+    const date = new Date(year, month, selectedDay);
+    onDateSelect(date); // Notify parent
   };
 
   return (
@@ -64,20 +64,23 @@ const MonthView = () => {
       <View style={{ height: itemHeight * 5 }}>
         <ScrollView
           contentContainerStyle={styles.monthGrid}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           {calendarDays.map((day, index) => (
             <TouchableOpacity
               key={index}
               style={[styles.monthContainer, getSelectedDayStyle(index)]}
               onPress={() => {
                 setSelectedDayIndex(index);
-                logSelectedDate(index); // Optional: Log selected date
-              }}>
+                logSelectedDate(index);
+              }}
+            >
               <Text
                 style={[
                   styles.dayText,
                   index === selectedDayIndex ? styles.selectedDayText : null,
-                ]}>
+                ]}
+              >
                 {day}
               </Text>
             </TouchableOpacity>
