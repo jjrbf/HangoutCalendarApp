@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { db, auth } from "../../firebaseConfig";
+import { ProfilePicture } from "../../components";
 import {
   getDocs,
   query,
@@ -74,8 +75,13 @@ export default function FriendsScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.resultItem}>
-              <Text style={styles.resultName}>{item.name}</Text>
-              <Text style={styles.resultUsername}>@{item.username}</Text>
+              <View style={styles.resultDetails}>
+                <ProfilePicture userId={item.id} size={40} />
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultName}>{item.name}</Text>
+                  <Text style={styles.resultUsername}>@{item.username}</Text>
+                </View>
+              </View>
               <Button
                 title="Add Friend"
                 onPress={() => handleAddFriend(item.id)}
@@ -109,6 +115,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
+  },
+  resultDetails: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  resultInfo: {
+    padding: 10,
   },
   resultName: {
     fontSize: 16,

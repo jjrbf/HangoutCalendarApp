@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "../../firebaseConfig";
 import { signOut } from "firebase/auth";
+import { ProfilePicture } from "../../components";
 import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
 
 export default function ProfileScreen({ navigation }) {
@@ -93,6 +94,7 @@ export default function ProfileScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>My Profile</Text>
+      <ProfilePicture userId={userId} size={100} />
       <Text style={styles.userName}>{name}</Text>
       <Text style={styles.userName}>@{username}</Text>
 
@@ -103,6 +105,7 @@ export default function ProfileScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.friendItem}>
+              <ProfilePicture userId={item.id} size={30} />
               <View style={styles.friendInfo}>
                 <Text style={styles.friendName}>{item.name}</Text>
                 <Text style={styles.friendUsername}>@{item.username}</Text>
@@ -163,6 +166,7 @@ const styles = StyleSheet.create({
   },
   friendInfo: {
     flex: 1,
+    marginLeft: 10,
   },
   friendName: {
     fontSize: 16,
