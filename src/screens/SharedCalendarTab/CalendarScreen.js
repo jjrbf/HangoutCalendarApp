@@ -102,8 +102,8 @@ export default function CalendarScreen({ route, navigation }) {
       }
     >
       <Text style={styles.eventTitle}>{item.title}</Text>
-      <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
-      <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
+      <Text>{`Start: ${item.startDate.toDate().toLocaleString()}`}</Text>
+      <Text>{`End: ${item.endDate.toDate().toLocaleString()}`}</Text>
       <Text style={styles.eventDescription}>{item.description}</Text>
     </TouchableOpacity>
   );

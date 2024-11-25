@@ -26,7 +26,7 @@ export default function AddEventScreen({ route, navigation }) {
     endDate: new Date(),
   }); // to check if the draft has been changed
   const [changed, setChanged] = useState(false);
-  const [location, setLocation] = useState(null); // Holds selected location data
+  const [location, setLocation] = useState(route.params.location ? route.params.location : null); // Holds selected location data
   const { calendarId, shared } = route.params;
   const draftKey = `event_draft_${userId}_${shared ? calendarId : "personal"}`; // different keys for each calendar
 

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, StyleSheet, Alert, FlatList } from "react-native";
+import { View, Text, Button, StyleSheet, Alert, FlatList, TouchableOpacity } from "react-native";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { ProfilePicture } from "../../components";
 import MapView, { Marker } from "react-native-maps";
+import { GEONAMES_USERNAME } from "../../config.js";
 
 export default function EventDetailsScreen({ route, navigation }) {
   const { eventId, shared, calendarId } = route.params; // Get the eventId passed from MyCalendarScreen
@@ -13,6 +14,7 @@ export default function EventDetailsScreen({ route, navigation }) {
   const [members, setMembers] = useState([]);
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -76,6 +78,32 @@ export default function EventDetailsScreen({ route, navigation }) {
     fetchEventDetails();
   }, [eventId]);
 
+  useEffect(() => {
+    // Only fetch weather when event is set and has a location
+    if (event && event.location != null) {
+      const fetchWeather = async () => {
+        try {
+          const latitude = event.location?.latitude ?? 49.19; // Default latitude
+          const longitude = event.location?.longitude ?? -123.17; // Default longitude
+          const response = await fetch(
+            `http://api.geonames.org/findNearByWeatherJSON?lat=${latitude}&lng=${longitude}&username=${GEONAMES_USERNAME}`
+          );
+          const data = await response.json();
+
+          if (response.ok) {
+            setWeather(data.weatherObservation);
+          } else {
+            setError("Failed to fetch weather");
+          }
+        } catch (err) {
+          setError(err.message || "Failed to fetch weather");
+        }
+      };
+
+      fetchWeather();
+    }
+  }, [event]); // This effect depends on the `event` state
+
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -110,7 +138,7 @@ export default function EventDetailsScreen({ route, navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.detailsContainer}>
         <Text style={styles.eventTitle}>{event.title}</Text>
         {shared && (
@@ -134,15 +162,27 @@ export default function EventDetailsScreen({ route, navigation }) {
             />
           </>
         )}
-        <Text
-          style={styles.eventDetail}
-        >{`Start: ${event.startDate.toLocaleString()}`}</Text>
-        <Text
-          style={styles.eventDetail}
-        >{`End: ${event.endDate.toLocaleString()}`}</Text>
-        <Text
-          style={styles.eventDetail}
-        >{`Description: ${event.description}`}</Text>
+        <Text style={styles.eventDetail}>{`Start: ${event.startDate
+          .toDate()
+          .toLocaleString()}`}</Text>
+        <Text style={styles.eventDetail}>{`End: ${event.endDate
+          .toDate()
+          .toLocaleString()}`}</Text>
+        <Text style={styles.eventDetail}>{`Description: ${
+          event.description ? event.description : "No description."
+        }`}</Text>
+
+        {weather && (
+          <>
+            <Text style={styles.cityText}>
+              Location: {weather.stationName || "N/A"}
+            </Text>
+            <Text style={styles.tempText}>
+              Temperature: {weather.temperature}°C
+            </Text>
+            <Text style={styles.descText}>Humidity: {weather.humidity}%</Text>
+          </>
+        )}
 
         {event.location && (
           <View style={styles.mapContainer}>
@@ -166,8 +206,9 @@ export default function EventDetailsScreen({ route, navigation }) {
           </View>
         )}
       </View>
-      <Button title="Back to Calendar" onPress={() => navigation.goBack()} />
-    </SafeAreaView>
+      <TouchableOpacity style={styles.button} title="Back to Calendar" onPress={() => navigation.goBack()}><Text>Back to Calendar</Text></TouchableOpacity>
+      {/* need to restyle this one lol */}
+    </View>
   );
 }
 
@@ -190,7 +231,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     marginTop: 20,
-    height: 300,
+    height: "30%",
   },
   mapTitle: {
     fontSize: 18,
@@ -199,7 +240,7 @@ const styles = StyleSheet.create({
   },
   map: {
     width: "100%",
-    height: "100%",
+    height: "70%",
   },
   errorText: {
     fontSize: 18,
@@ -230,4 +271,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
+  button: {
+    backgroundColor: "#eeeeee",
+    padding: 10,
+    borderColor: "111",
+    borderWidth: 1
+  }
 });
