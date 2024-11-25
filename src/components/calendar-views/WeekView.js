@@ -20,7 +20,7 @@ const generateDates = (year, startDayOfWeek) => {
   return dates;
 };
 
-const WeekView = () => {
+const WeekView = ({ onDateSelect }) => {
   const year = 2024; // Desired year
   const startDayOfWeek = 0; // Start the week on Sunday
   const calendarDays = generateDates(year, startDayOfWeek);
@@ -52,11 +52,10 @@ const WeekView = () => {
     return null;
   };
 
-  // Log the selected date in 'year, month, day' format
   const logSelectedDate = (index) => {
     const selectedDay = calendarDays[index];
-    const month = todayMonth + 1; // Months are zero-based
-    console.log(`${year}, ${month}, ${selectedDay}`);
+    const date = new Date(year, todayMonth, selectedDay);
+    onDateSelect(date); // Notify parent
   };
 
   return (
