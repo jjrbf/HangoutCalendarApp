@@ -8,13 +8,12 @@ const orderDaysOfWeek = (startDayOfWeek) => {
   return [...days.slice(startDayOfWeek), ...days.slice(0, startDayOfWeek)];
 };
 
-export default function CalendarSwitcher() {
+export default function CalendarSwitcher({ onDateChange }) {
   const [isMonthView, setIsMonthView] = React.useState(true);
-  const startDayOfWeek = 0; // Start the week on Sunday
+  const startDayOfWeek = 0;
 
   return (
     <View>
-      {/* Switch button */}
       <TouchableOpacity
         style={styles.switchButton}
         onPress={() => setIsMonthView(!isMonthView)}
@@ -24,7 +23,6 @@ export default function CalendarSwitcher() {
         </Text>
       </TouchableOpacity>
 
-      {/* Days of the Week */}
       <View style={styles.daysOfWeek}>
         {orderDaysOfWeek(startDayOfWeek).map((day, index) => (
           <Text key={index} style={styles.dayOfWeekText}>
@@ -33,11 +31,15 @@ export default function CalendarSwitcher() {
         ))}
       </View>
 
-      {/* Render the appropriate view based on state */}
-      {isMonthView ? <MonthView /> : <WeekView />}
+      {isMonthView ? (
+        <MonthView onDateSelect={onDateChange} />
+      ) : (
+        <WeekView onDateSelect={onDateChange} />
+      )}
     </View>
   );
-};
+}
+
 
 const styles = StyleSheet.create({
     switchButton: {

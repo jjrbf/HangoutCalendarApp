@@ -5,19 +5,16 @@ import { db, auth } from "../../firebaseConfig";
 import {
   collection,
   getDocs,
-  addDoc,
-  doc,
-  deleteDoc,
-  Timestamp,
 } from "firebase/firestore";
 import { CalendarSwitcher } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
   const userId = auth.currentUser.uid;
 
-  // Fetch events from Firestore
   const fetchEvents = async () => {
     try {
       const calendarId = `personal_calendar_${userId}`;
@@ -41,79 +38,35 @@ export default function MyCalendarScreen({ route, navigation }) {
       });
 
       setEvents(eventsList);
+      filterEvents(eventsList, selectedDate);
     } catch (error) {
       console.error("Error fetching events: ", error);
       Alert.alert("Error", "Could not fetch events.");
     }
   };
 
-  // Use useFocusEffect to fetch events whenever the screen is focused
+  const filterEvents = (eventsList, date) => {
+    const filtered = eventsList.filter(
+      (event) =>
+        event.startDate.toDateString() === date.toDateString() // Match only the selected day
+    );
+    setFilteredEvents(filtered);
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    filterEvents(events, date);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
     }, [userId])
   );
 
-  const handleAddEvent = async () => {
-    const newEvent = {
-      title: eventTitle,
-      startDate: Timestamp.fromDate(startDate),
-      endDate: Timestamp.fromDate(endDate),
-      description: eventDescription,
-    };
-
-    try {
-      const calendarId = `personal_calendar_${userId}`;
-      await addDoc(collection(db, "calendars", calendarId, "events"), newEvent);
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
-      Alert.alert("Success", "Event added successfully!");
-      setEventTitle("");
-      setEventDescription("");
-      setStartDate(new Date());
-      setEndDate(new Date());
-    } catch (error) {
-      console.error("Error adding event: ", error);
-      Alert.alert("Error", "Could not add event.");
-    }
-  };
-
-  const handleDeleteEvent = async (eventId) => {
-    Alert.alert(
-      "Delete Event",
-      "Are you sure you want to delete this event?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const eventDoc = doc(
-                db,
-                "calendars",
-                `personal_calendar_${userId}`,
-                "events",
-                eventId
-              );
-              await deleteDoc(eventDoc);
-              setEvents((prevEvents) =>
-                prevEvents.filter((event) => event.id !== eventId)
-              );
-              Alert.alert("Success", "Event deleted successfully!");
-            } catch (error) {
-              console.error("Error deleting event: ", error);
-              Alert.alert("Error", "Could not delete event.");
-            }
-          },
-        },
-      ],
-      { cancelable: false }
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <CalendarSwitcher />
+      <CalendarSwitcher onDateChange={handleDateChange} />
       <Button
         title="Add Event"
         onPress={() =>
@@ -124,7 +77,7 @@ export default function MyCalendarScreen({ route, navigation }) {
       />
       <View style={styles.eventsContainer}>
         <FlatList
-          data={events}
+          data={filteredEvents}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.eventItem}>
