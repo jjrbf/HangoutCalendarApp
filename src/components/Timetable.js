@@ -23,6 +23,7 @@ export default function Timetable({
   onTimeChange,
   startDate,
   endDate,
+  setInvalidMessage,
 }) {
   const [busyTimes, setBusyTimes] = useState([]);
   const [passedTimes, setPassedTimes] = useState([]);
@@ -159,6 +160,48 @@ export default function Timetable({
       arr.push(startDate.getTime() + i * 1800000);
     }
     setSelectedTime(arr); // Update selected time
+    if (endDate.getTime() - startDate.getTime() < 0) {
+      setInvalidMessage({
+        message: "End date must be after the start date.",
+        stop: false,
+      });
+      console.log("END DATE");
+    } else if (
+      Array.isArray(passedTimes) &&
+      passedTimes.length > 0 &&
+      (passedTimes[passedTimes.length - 1] - startDate.getTime() > 0 ||
+        passedTimes[passedTimes.length - 1] - endDate.getTime() > 0)
+    ) {
+      setInvalidMessage({
+        message: "Selected time must not be passed already.",
+        stop: false,
+      });
+      console.log("PASSED TIME");
+    } else {
+      // Check for overlaps in gridData using similar logic
+      let overlapFound = false;
+
+      gridData.forEach((day) => {
+        day.forEach((cell) => {
+          if (
+            selectedTime.includes(cell.time) && // Time matches a selected time
+            cell.overlaps > 0 // There's an overlap
+          ) {
+            overlapFound = true;
+          }
+        });
+      });
+
+      if (overlapFound) {
+        setInvalidMessage({
+          message: "One or more members are busy during the selected time.",
+          stop: true,
+        });
+        console.log("OVERLAP FOUND");
+      } else {
+        setInvalidMessage(null);
+      }
+    }
   }, [startDate, endDate]); // change selected time
 
   // Handle tap on a free slot
@@ -213,7 +256,7 @@ export default function Timetable({
                   </Text>
                 )
               ) : (
-                console.log("start")
+                console.log("")
               )
             )}
           </View>
@@ -238,11 +281,10 @@ export default function Timetable({
                       handleTap(cell.time)
                     } // Only allow tapping on free slots
                   >
-                    {((cell.overlaps > 0 || passedTimes.includes(cell.time))) && selectedTime.includes(cell.time) && (
-                      <Text style={styles.errorText}>
-                        !!!
-                      </Text>
-                    )}
+                    {(cell.overlaps > 0 || passedTimes.includes(cell.time)) &&
+                      selectedTime.includes(cell.time) && (
+                        <Text style={styles.errorText}>!!!</Text>
+                      )}
                   </TouchableOpacity>
                 );
               })}
@@ -312,5 +354,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textAlignVertical: "center",
     flex: 1,
-  },  
+  },
 });
