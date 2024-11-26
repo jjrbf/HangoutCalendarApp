@@ -71,10 +71,11 @@ export default function SetLocationScreen({ route, navigation }) {
 
   const handleSetLocation = () => {
     if (selectedLocation) {
+      console.log("Setting location:", selectedLocation);
       navigation.navigate("AddEvent", {
-        selectedLocation, // Pass the selected location back to AddEventScreen
-        calendarId: calendarId,
-        shared: shared,
+        selectedLocation,
+        calendarId,
+        shared,
       });
     } else {
       Alert.alert("Error", "Please select a location first.");

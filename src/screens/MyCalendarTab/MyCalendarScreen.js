@@ -4,7 +4,7 @@ import { View, Text, Button, FlatList, StyleSheet, Alert, Linking, Platform } fr
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
-import { collection, getDocs, query, where, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { CalendarSwitcher } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -57,6 +57,18 @@ export default function MyCalendarScreen({ route, navigation }) {
           }));
 
           setDeviceCalendarEvents(formattedEvents);
+
+          // Extract busyTimes
+          const busyTimes = formattedEvents.map((event) => ({
+            startTime: event.startDate.getTime(),
+            endTime: event.endDate.getTime(),
+          }));
+
+          // Update Firestore with busyTimes
+          const userDocRef = doc(db, "users", userId); // Replace USER_ID with the logged-in user's ID
+          await updateDoc(userDocRef, {
+            busyTimes: busyTimes,
+          });
         }
       } catch (error) {
         console.error("Error loading stored calendar:", error);

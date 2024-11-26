@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../../firebaseConfig";
+import { Timetable } from "../../components";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -26,7 +27,10 @@ export default function AddEventScreen({ route, navigation }) {
     endDate: new Date(),
   }); // to check if the draft has been changed
   const [changed, setChanged] = useState(false);
-  const [location, setLocation] = useState(route.params.location ? route.params.location : null); // Holds selected location data
+  const [invalidMessage, setInvalidMessage] = useState(null);
+  const [location, setLocation] = useState(
+    route.params.location ? route.params.location : null
+  ); // Holds selected location data
   const { calendarId, shared } = route.params;
   const draftKey = `event_draft_${userId}_${shared ? calendarId : "personal"}`; // different keys for each calendar
 
@@ -98,46 +102,68 @@ export default function AddEventScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    // Retrieve location from route params if set in SetLocationScreen
     if (route.params?.selectedLocation) {
       setLocation(route.params.selectedLocation);
     }
-  }, [userId]);
+  }, [route.params?.selectedLocation]); // Re-run when selectedLocation changes
 
   const handleAddEvent = async () => {
-    const newEvent = {
-      title: eventTitle,
-      startDate: Timestamp.fromDate(startDate),
-      endDate: Timestamp.fromDate(endDate),
-      description: eventDescription,
-      location: location || null,
+
+    const setEvent = async () => {
+      const newEvent = {
+        title: eventTitle,
+        startDate: Timestamp.fromDate(startDate),
+        endDate: Timestamp.fromDate(endDate),
+        description: eventDescription,
+        location: location || null,
+      };
+      try {
+        const calendarIdToSet = shared
+          ? calendarId
+          : `personal_calendar_${userId}`;
+        await addDoc(
+          collection(db, "calendars", calendarIdToSet, "events"),
+          newEvent
+        );
+        setEvents((prevEvents) => [...prevEvents, newEvent]);
+        clearDraft();
+        Alert.alert("Success", "Event added successfully!");
+  
+        // Reset fields after adding the event
+        setEventTitle("");
+        setEventDescription("");
+        setStartDate(new Date());
+        setEndDate(new Date());
+        setLocation(null);
+        setInvalidMessage(null);
+        navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+          calendarId: calendarId,
+        });
+      } catch (error) {
+        console.error("Error adding event: ", error);
+        Alert.alert("Error", "Could not add event.");
+      }
     };
 
-    try {
-      const calendarIdToSet = shared
-        ? calendarId
-        : `personal_calendar_${userId}`;
-      await addDoc(
-        collection(db, "calendars", calendarIdToSet, "events"),
-        newEvent
+    if (invalidMessage != null) {
+      Alert.alert(
+        "Time Set Invalid",
+        invalidMessage.message,
+        invalidMessage.stop && [
+          {
+            text: "Go Back",
+            onPress: () => console.log("Cancel Pressed"),
+            style: "cancel",
+          },
+          {
+            text: "Add Event Anyway",
+            onPress: () => {
+              setEvent();
+            },
+          },
+        ]
       );
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
-      clearDraft();
-      Alert.alert("Success", "Event added successfully!");
-
-      // Reset fields after adding the event
-      setEventTitle("");
-      setEventDescription("");
-      setStartDate(new Date());
-      setEndDate(new Date());
-      setLocation(null);
-      navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
-        calendarId: calendarId,
-      });
-    } catch (error) {
-      console.error("Error adding event: ", error);
-      Alert.alert("Error", "Could not add event.");
-    }
+    } else setEvent();
   };
 
   const handleLeaveScreen = () => {
@@ -167,6 +193,11 @@ export default function AddEventScreen({ route, navigation }) {
           },
         ]
       );
+    } else if (invalidMessage != null) {
+      clearDraft();
+      navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
+        calendarId,
+      });
     } else {
       navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
         calendarId,
@@ -174,9 +205,22 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
+  const handleTimeChange = (startDate, endDate) => {
+    setStartDate(startDate);
+    setEndDate(endDate);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Button title="Back to Screen" onPress={() => handleLeaveScreen()} />
+
+      <Timetable
+        calendarId={calendarId}
+        onTimeChange={handleTimeChange}
+        startDate={startDate}
+        endDate={endDate}
+        setInvalidMessage={setInvalidMessage}
+      />
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
