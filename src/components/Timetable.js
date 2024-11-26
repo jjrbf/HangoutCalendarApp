@@ -42,7 +42,7 @@ export default function Timetable({
     try {
       const userDocRef = doc(db, "users", userId);
       const userDoc = await getDoc(userDocRef);
-  
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         return userData.busyTimes || [];
@@ -56,7 +56,6 @@ export default function Timetable({
     }
   };
 
-  // Fetch busy times for members and the owner
   useEffect(() => {
     const fetchBusyTimes = async () => {
       try {
@@ -77,55 +76,93 @@ export default function Timetable({
         const allBusyTimes = [];
 
         for (const memberId of memberIds) {
-            // Fetch all calendars where the member is part of
-            const calendarsQuery = query(
-              collection(db, "calendars"),
-              where("members", "array-contains", memberId)
+          // Fetch all shared calendars where the user is a member
+          const memberCalendarsQuery = query(
+            collection(db, "calendars"),
+            where("members", "array-contains", memberId)
+          );
+          const memberCalendarsSnapshot = await getDocs(memberCalendarsQuery);
+
+          for (const calendarDoc of memberCalendarsSnapshot.docs) {
+            const calendarId = calendarDoc.id;
+
+            // Fetch events from shared calendars where the user is a member
+            const eventsCollection = collection(
+              db,
+              `calendars/${calendarId}/events`
             );
-            const calendarsSnapshot = await getDocs(calendarsQuery);
-          
-            // Fetch events from these calendars and add to allBusyTimes
-            for (const calendarDoc of calendarsSnapshot.docs) {
-              const eventsCollection = collection(
-                db,
-                `calendars/${calendarDoc.id}/events`
-              );
-              const eventsSnapshot = await getDocs(eventsCollection);
-          
-              eventsSnapshot.forEach((eventDoc) => {
-                const event = eventDoc.data();
+            const eventsSnapshot = await getDocs(eventsCollection);
+
+            eventsSnapshot.forEach((eventDoc) => {
+              const event = eventDoc.data();
+              allBusyTimes.push({
+                start: event.startDate.seconds * 1000,
+                end: event.endDate.seconds * 1000,
+              });
+            });
+          }
+
+          // Fetch all shared calendars where the user is an owner
+          const ownerCalendarsQuery = query(
+            collection(db, "calendars"),
+            where("ownerId", "==", memberId)
+          );
+          const ownerCalendarsSnapshot = await getDocs(ownerCalendarsQuery);
+
+          for (const calendarDoc of ownerCalendarsSnapshot.docs) {
+            const calendarId = calendarDoc.id;
+
+            // Fetch events from shared calendars where the user is an owner
+            const eventsCollection = collection(
+              db,
+              `calendars/${calendarId}/events`
+            );
+            const eventsSnapshot = await getDocs(eventsCollection);
+
+            eventsSnapshot.forEach((eventDoc) => {
+              const event = eventDoc.data();
+              allBusyTimes.push({
+                start: event.startDate.seconds * 1000,
+                end: event.endDate.seconds * 1000,
+              });
+            });
+          }
+
+          // Fetch the user's personal busyTimes from their Firestore document
+          const userDocRef = doc(db, "users", memberId);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const userBusyTimes = userData.busyTimes || []; // Default to an empty array if undefined
+
+            if (Array.isArray(userBusyTimes)) {
+              userBusyTimes.forEach((busyTime) => {
                 allBusyTimes.push({
-                  start: event.startDate.seconds * 1000,
-                  end: event.endDate.seconds * 1000,
+                  start: new Date(busyTime.startTime).getTime(),
+                  end: new Date(busyTime.endTime).getTime(),
                 });
               });
-            }
-          
-            // Fetch the user's busyTimes from their Firestore document
-            const userDocRef = doc(db, "users", memberId);
-            const userDoc = await getDoc(userDocRef);
-          
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              const userBusyTimes = userData.busyTimes || []; // Ensure busyTimes defaults to an array if undefined
-          
-              if (Array.isArray(userBusyTimes)) {
-                // Append each busyTime entry to allBusyTimes
-                userBusyTimes.forEach((busyTime) => {
-                  allBusyTimes.push({
-                    start: new Date(busyTime.startTime).getTime(), // Convert ISO string to timestamp
-                    end: new Date(busyTime.endTime).getTime(),
-                  });
-                });
-              } else {
-                console.warn(`busyTimes for user ${memberId} is not an array.`);
-              }
             } else {
-              console.warn(`User document for ${memberId} does not exist.`);
+              console.warn(`busyTimes for user ${memberId} is not an array.`);
             }
-          }          
+          } else {
+            console.warn(`User document for ${memberId} does not exist.`);
+          }
+        }
 
-        setBusyTimes(allBusyTimes);
+        // Remove duplicates and ensure proper sorting
+        const uniqueBusyTimes = allBusyTimes
+          .filter(
+            (time, index, self) =>
+              index ===
+              self.findIndex(
+                (t) => t.start === time.start && t.end === time.end
+              )
+          )
+          .sort((a, b) => a.start - b.start);
+
+        setBusyTimes(uniqueBusyTimes);
       } catch (error) {
         console.error("Error fetching busy times:", error);
         Alert.alert("Error", "An error occurred while fetching busy times.");
