@@ -4,7 +4,7 @@ import { View, Text, Button, FlatList, StyleSheet, Alert, Linking, Platform } fr
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, deleteDoc } from "firebase/firestore";
 import { CalendarSwitcher } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
