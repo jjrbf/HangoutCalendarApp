@@ -160,6 +160,11 @@ export default function Timetable({
       arr.push(startDate.getTime() + i * 1800000);
     }
     setSelectedTime(arr); // Update selected time
+  }, [startDate, endDate]); // change selected time
+
+  
+
+  useEffect(() => {
     if (endDate.getTime() - startDate.getTime() < 0) {
       setInvalidMessage({
         message: "End date must be after the start date.",
@@ -202,7 +207,7 @@ export default function Timetable({
         setInvalidMessage(null);
       }
     }
-  }, [startDate, endDate]); // change selected time
+  }, [selectedTime]); // change selected time
 
   // Handle tap on a free slot
   const handleTap = (time) => {
