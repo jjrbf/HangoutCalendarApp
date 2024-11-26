@@ -29,7 +29,10 @@ export default function Timetable({
   const [passedTimes, setPassedTimes] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTime, setSelectedTime] = useState([]); // Track selected time
+  const [selectedTime, setSelectedTime] = useState([]);
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    new Date(new Date().setHours(0, 0, 0, 0)) // Start of current day
+  );
 
   const hoursPerDay = 24;
   const daysPerWeek = 7;
@@ -40,7 +43,6 @@ export default function Timetable({
       try {
         setLoading(true);
 
-        // Step 1: Fetch calendar data
         const calendarDocRef = doc(db, "calendars", calendarId);
         const calendarSnapshot = await getDoc(calendarDocRef);
 
@@ -52,43 +54,28 @@ export default function Timetable({
 
         const calendarData = calendarSnapshot.data();
         const { members, ownerId } = calendarData;
-
-        // Step 2: Collect all member IDs (owner + members)
         const memberIds = [ownerId, ...members];
-
-        // Step 3: Fetch events for each member
         const allBusyTimes = [];
 
         for (const memberId of memberIds) {
-          // Query calendars where the member is in the members array
           const calendarsQuery = query(
             collection(db, "calendars"),
             where("members", "array-contains", memberId)
           );
-
-          // Fetch all calendars matching the query
           const calendarsSnapshot = await getDocs(calendarsQuery);
 
           for (const calendarDoc of calendarsSnapshot.docs) {
-            const calendarId = calendarDoc.id;
-
-            // Reference to the events subcollection of the current calendar
             const eventsCollection = collection(
               db,
-              `calendars/${calendarId}/events`
+              `calendars/${calendarDoc.id}/events`
             );
-
-            // Fetch all events from the events subcollection
             const eventsSnapshot = await getDocs(eventsCollection);
 
-            // Process each event in the events subcollection
             eventsSnapshot.forEach((eventDoc) => {
               const event = eventDoc.data();
-
-              // Use the seconds property of the Firestore Timestamp
               allBusyTimes.push({
-                start: event.startDate.seconds * 1000, // Convert seconds to milliseconds
-                end: event.endDate.seconds * 1000, // Convert seconds to milliseconds
+                start: event.startDate.seconds * 1000,
+                end: event.endDate.seconds * 1000,
               });
             });
           }
@@ -104,32 +91,16 @@ export default function Timetable({
     };
 
     fetchBusyTimes();
-  }, [calendarId]);
+  }, [calendarId, currentWeekStart]);
 
   // Generate timetable grid
   useEffect(() => {
-    if (busyTimes.length === 0) {
-      setGridData([]);
-      return;
-    }
-
-    const now = new Date();
-    const weekStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - now.getDay() // Start of this week (Sunday)
-    );
-
     const grid = Array.from({ length: daysPerWeek }, (_, day) =>
       Array.from({ length: hoursPerDay * 2 }, (_, hour) => {
         const time =
-          new Date(
-            weekStart.getFullYear(),
-            weekStart.getMonth(),
-            weekStart.getDate() + day,
-            hour / 2
-          ).getTime() + (hour % 2 == 1 ? 1800000 : 0);
-
+          currentWeekStart.getTime() +
+          day * 24 * 60 * 60 * 1000 +
+          (hour / 2) * 60 * 60 * 1000;
         const overlappingEvents = busyTimes.filter(
           (busy) => time >= busy.start && time < busy.end
         );
@@ -141,17 +112,16 @@ export default function Timetable({
     setGridData(grid);
 
     const fetchPassedTimes = () => {
-      const currentTime = new Date().getTime();
-      const cellsT = (currentTime - weekStart.getTime()) / 1800000;
-      let arr = [];
-      for (let i = 0; i < cellsT; i++) {
-        arr.push(weekStart.getTime() + i * 1800000);
-      }
-      setPassedTimes(arr); // Update selected time
+      const now = Date.now();
+      const passed = grid
+        .flat()
+        .filter((cell) => cell.time < now)
+        .map((cell) => cell.time);
+      setPassedTimes(passed);
     };
 
     fetchPassedTimes();
-  }, [busyTimes]);
+  }, [busyTimes, currentWeekStart]);
 
   useEffect(() => {
     const cellsT = (endDate.getTime() - startDate.getTime()) / 1800000;
@@ -161,8 +131,6 @@ export default function Timetable({
     }
     setSelectedTime(arr); // Update selected time
   }, [startDate, endDate]); // change selected time
-
-  
 
   useEffect(() => {
     if (endDate.getTime() - startDate.getTime() < 0) {
@@ -226,9 +194,32 @@ export default function Timetable({
     );
   }
 
+  // Navigate weeks
+  const goToNextWeek = () => {
+    setCurrentWeekStart(
+      new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+    );
+  };
+
+  const goToPreviousWeek = () => {
+    setCurrentWeekStart(
+      new Date(currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Timetable</Text>
+      <View style={styles.heading}>
+        <TouchableOpacity onPress={goToPreviousWeek} style={styles.button}>
+          <Text style={styles.buttonText}>Previous</Text>
+        </TouchableOpacity>
+        <Text style={styles.header}>
+          Timetable ({currentWeekStart.toDateString()})
+        </Text>
+        <TouchableOpacity onPress={goToNextWeek} style={styles.button}>
+          <Text style={styles.buttonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.headerRow}>
         <View style={styles.dayColumn}>
           <Text style={[styles.dayLabel, { width: 40 }]}>Hour</Text>
@@ -270,11 +261,11 @@ export default function Timetable({
               {day.map((cell, hourIndex) => {
                 const backgroundColor = passedTimes.includes(cell.time)
                   ? "gray"
-                  : selectedTime.includes(cell.time)
-                  ? "orange" // Highlight selected time
                   : cell.overlaps > 0
-                  ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})` // Red for overlaps
-                  : "rgba(0, 255, 0, 0.3)"; // Green for free time
+                  ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})`
+                  : selectedTime.includes(cell.time)
+                  ? "orange"
+                  : "rgba(0, 255, 0, 0.3)";
 
                 return (
                   <TouchableOpacity
@@ -308,14 +299,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "bold",
-    textAlign: "center",
+  },
+  heading: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  button: {
+    padding: 10,
+    backgroundColor: "#007bff",
+    borderRadius: 5,
+  },
+  buttonText: {
+    fontSize: 10,
+    color: "white",
+    fontWeight: "bold",
   },
   timeAxisHeader: {
     marginTop: -9,
