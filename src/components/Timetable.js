@@ -25,6 +25,7 @@ export default function Timetable({
   endDate,
 }) {
   const [busyTimes, setBusyTimes] = useState([]);
+  const [passedTimes, setPassedTimes] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTime, setSelectedTime] = useState([]); // Track selected time
@@ -137,13 +138,25 @@ export default function Timetable({
     );
 
     setGridData(grid);
+
+    const fetchPassedTimes = () => {
+      const currentTime = new Date().getTime();
+      const cellsT = (currentTime - weekStart.getTime()) / 1800000;
+      let arr = [];
+      for (let i = 0; i < cellsT; i++) {
+        arr.push(weekStart.getTime() + i * 1800000);
+      }
+      setPassedTimes(arr); // Update selected time
+    };
+
+    fetchPassedTimes();
   }, [busyTimes]);
 
   useEffect(() => {
     const cellsT = (endDate.getTime() - startDate.getTime()) / 1800000;
     let arr = [];
     for (let i = 0; i < cellsT; i++) {
-      arr.push(startDate.getTime() + (i * 1800000))
+      arr.push(startDate.getTime() + i * 1800000);
     }
     setSelectedTime(arr); // Update selected time
   }, [startDate, endDate]); // change selected time
@@ -207,7 +220,9 @@ export default function Timetable({
           {gridData.map((day, dayIndex) => (
             <View key={dayIndex} style={styles.dayColumn}>
               {day.map((cell, hourIndex) => {
-                const backgroundColor = selectedTime.includes(cell.time)
+                const backgroundColor = passedTimes.includes(cell.time)
+                  ? "gray"
+                  : selectedTime.includes(cell.time)
                   ? "orange" // Highlight selected time
                   : cell.overlaps > 0
                   ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})` // Red for overlaps
@@ -217,7 +232,7 @@ export default function Timetable({
                   <TouchableOpacity
                     key={hourIndex}
                     style={[styles.cell, { backgroundColor }]}
-                    onPress={() => cell.overlaps === 0 && handleTap(cell.time)} // Only allow tapping on free slots
+                    onPress={() => (cell.overlaps === 0 && !passedTimes.includes(cell.time)) && handleTap(cell.time)} // Only allow tapping on free slots
                   />
                 );
               })}
