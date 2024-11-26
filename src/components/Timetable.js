@@ -8,7 +8,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { db } from "../firebaseConfig";
+import { db, auth } from "../firebaseConfig";
 import {
   collection,
   doc,
@@ -33,9 +33,28 @@ export default function Timetable({
   const [currentWeekStart, setCurrentWeekStart] = useState(
     new Date(new Date().setHours(0, 0, 0, 0)) // Start of current day
   );
+  const userId = auth.currentUser.uid;
 
   const hoursPerDay = 24;
   const daysPerWeek = 7;
+
+  const fetchBusyTimes = async (userId) => {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.busyTimes || [];
+      } else {
+        console.log("No user document found!");
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching busy times:", error);
+      return [];
+    }
+  };
 
   // Fetch busy times for members and the owner
   useEffect(() => {
@@ -58,28 +77,53 @@ export default function Timetable({
         const allBusyTimes = [];
 
         for (const memberId of memberIds) {
-          const calendarsQuery = query(
-            collection(db, "calendars"),
-            where("members", "array-contains", memberId)
-          );
-          const calendarsSnapshot = await getDocs(calendarsQuery);
-
-          for (const calendarDoc of calendarsSnapshot.docs) {
-            const eventsCollection = collection(
-              db,
-              `calendars/${calendarDoc.id}/events`
+            // Fetch all calendars where the member is part of
+            const calendarsQuery = query(
+              collection(db, "calendars"),
+              where("members", "array-contains", memberId)
             );
-            const eventsSnapshot = await getDocs(eventsCollection);
-
-            eventsSnapshot.forEach((eventDoc) => {
-              const event = eventDoc.data();
-              allBusyTimes.push({
-                start: event.startDate.seconds * 1000,
-                end: event.endDate.seconds * 1000,
+            const calendarsSnapshot = await getDocs(calendarsQuery);
+          
+            // Fetch events from these calendars and add to allBusyTimes
+            for (const calendarDoc of calendarsSnapshot.docs) {
+              const eventsCollection = collection(
+                db,
+                `calendars/${calendarDoc.id}/events`
+              );
+              const eventsSnapshot = await getDocs(eventsCollection);
+          
+              eventsSnapshot.forEach((eventDoc) => {
+                const event = eventDoc.data();
+                allBusyTimes.push({
+                  start: event.startDate.seconds * 1000,
+                  end: event.endDate.seconds * 1000,
+                });
               });
-            });
-          }
-        }
+            }
+          
+            // Fetch the user's busyTimes from their Firestore document
+            const userDocRef = doc(db, "users", memberId);
+            const userDoc = await getDoc(userDocRef);
+          
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const userBusyTimes = userData.busyTimes || []; // Ensure busyTimes defaults to an array if undefined
+          
+              if (Array.isArray(userBusyTimes)) {
+                // Append each busyTime entry to allBusyTimes
+                userBusyTimes.forEach((busyTime) => {
+                  allBusyTimes.push({
+                    start: new Date(busyTime.startTime).getTime(), // Convert ISO string to timestamp
+                    end: new Date(busyTime.endTime).getTime(),
+                  });
+                });
+              } else {
+                console.warn(`busyTimes for user ${memberId} is not an array.`);
+              }
+            } else {
+              console.warn(`User document for ${memberId} does not exist.`);
+            }
+          }          
 
         setBusyTimes(allBusyTimes);
       } catch (error) {
