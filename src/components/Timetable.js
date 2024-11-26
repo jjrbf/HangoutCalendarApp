@@ -164,7 +164,7 @@ export default function Timetable({
   // Handle tap on a free slot
   const handleTap = (time) => {
     const start = new Date(time);
-    const end = new Date(time + 60 * 60 * 1000); // Set end time to 1 hour after start
+    const end = new Date(time + 60 * 60 * 1000 - 1800000); // Set end time to half an hour after start
     onTimeChange(start, end);
     Alert.alert("Time Selected", `Start: ${start}, End: ${end}`);
   };
@@ -232,8 +232,18 @@ export default function Timetable({
                   <TouchableOpacity
                     key={hourIndex}
                     style={[styles.cell, { backgroundColor }]}
-                    onPress={() => (cell.overlaps === 0 && !passedTimes.includes(cell.time)) && handleTap(cell.time)} // Only allow tapping on free slots
-                  />
+                    onPress={() =>
+                      cell.overlaps === 0 &&
+                      !passedTimes.includes(cell.time) &&
+                      handleTap(cell.time)
+                    } // Only allow tapping on free slots
+                  >
+                    {((cell.overlaps > 0 || passedTimes.includes(cell.time))) && selectedTime.includes(cell.time) && (
+                      <Text style={styles.errorText}>
+                        !!!
+                      </Text>
+                    )}
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -296,4 +306,11 @@ const styles = StyleSheet.create({
     marginVertical: 1,
     borderRadius: 3,
   },
+  errorText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+    textAlignVertical: "center",
+    flex: 1,
+  },  
 });
