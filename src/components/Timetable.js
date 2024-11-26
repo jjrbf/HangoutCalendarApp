@@ -18,10 +18,16 @@ import {
   where,
 } from "firebase/firestore";
 
-export default function Timetable({ calendarId, onTimeChange }) {
+export default function Timetable({
+  calendarId,
+  onTimeChange,
+  startDate,
+  endDate,
+}) {
   const [busyTimes, setBusyTimes] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTime, setSelectedTime] = useState([]); // Track selected time
 
   const hoursPerDay = 24;
   const daysPerWeek = 7;
@@ -113,13 +119,14 @@ export default function Timetable({ calendarId, onTimeChange }) {
     );
 
     const grid = Array.from({ length: daysPerWeek }, (_, day) =>
-      Array.from({ length: hoursPerDay }, (_, hour) => {
-        const time = new Date(
-          weekStart.getFullYear(),
-          weekStart.getMonth(),
-          weekStart.getDate() + day,
-          hour
-        ).getTime();
+      Array.from({ length: hoursPerDay * 2 }, (_, hour) => {
+        const time =
+          new Date(
+            weekStart.getFullYear(),
+            weekStart.getMonth(),
+            weekStart.getDate() + day,
+            hour / 2
+          ).getTime() + (hour % 2 == 1 ? 1800000 : 0);
 
         const overlappingEvents = busyTimes.filter(
           (busy) => time >= busy.start && time < busy.end
@@ -131,6 +138,15 @@ export default function Timetable({ calendarId, onTimeChange }) {
 
     setGridData(grid);
   }, [busyTimes]);
+
+  useEffect(() => {
+    const cellsT = (endDate.getTime() - startDate.getTime()) / 1800000;
+    let arr = [];
+    for (let i = 0; i < cellsT; i++) {
+      arr.push(startDate.getTime() + (i * 1800000))
+    }
+    setSelectedTime(arr); // Update selected time
+  }, [startDate, endDate]); // change selected time
 
   // Handle tap on a free slot
   const handleTap = (time) => {
@@ -150,26 +166,11 @@ export default function Timetable({ calendarId, onTimeChange }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.header}>Timetable</Text>
-      <View style={styles.grid}>
-        <View style={styles.headerRow}>
-          <View style={styles.timeAxisHeader} />
-          {Array.from({ length: 26 }).map((_, i) =>
-            i > 0 ? (
-              i < 14 ? (
-                <Text key={i} style={styles.hourLabel}>
-                  {i == 1 ? "12AM -" : `${i - 1}${i == 13 ? "PM" : "AM"} -`}
-                </Text>
-              ) : (
-                <Text key={i} style={styles.hourLabel}>
-                  {`${i - 13}${i == 25 ? "AM" : "PM"} -`}
-                </Text>
-              )
-            ) : (
-              console.log("start")
-            )
-          )}
+      <View style={styles.headerRow}>
+        <View style={styles.dayColumn}>
+          <Text style={[styles.dayLabel, { width: 40 }]}>Hour</Text>
         </View>
         {gridData.map((day, dayIndex) => (
           <View key={dayIndex} style={styles.dayColumn}>
@@ -181,24 +182,50 @@ export default function Timetable({ calendarId, onTimeChange }) {
                 }
               )}
             </Text>
-            {day.map((cell, hourIndex) => {
-              const backgroundColor =
-                cell.overlaps > 0
-                  ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})` // Darker red for more overlaps
-                  : "rgba(0, 255, 0, 0.3)"; // Green for free time
-
-              return (
-                <TouchableOpacity
-                  key={hourIndex}
-                  style={[styles.cell, { backgroundColor }]}
-                  onPress={() => cell.overlaps === 0 && handleTap(cell.time)} // Only allow tapping on free slots
-                />
-              );
-            })}
           </View>
         ))}
       </View>
-    </ScrollView>
+      <ScrollView>
+        <View style={styles.grid}>
+          <View style={styles.timeAxisHeader}>
+            {Array.from({ length: 26 }).map((_, i) =>
+              i > 0 ? (
+                i < 14 ? (
+                  <Text key={i} style={styles.hourLabel}>
+                    {i == 1 ? "12AM -" : `${i - 1}${i == 13 ? "PM" : "AM"} -`}
+                  </Text>
+                ) : (
+                  <Text key={i} style={styles.hourLabel}>
+                    {`${i - 13}${i == 25 ? "AM" : "PM"} -`}
+                  </Text>
+                )
+              ) : (
+                console.log("start")
+              )
+            )}
+          </View>
+          {gridData.map((day, dayIndex) => (
+            <View key={dayIndex} style={styles.dayColumn}>
+              {day.map((cell, hourIndex) => {
+                const backgroundColor = selectedTime.includes(cell.time)
+                  ? "orange" // Highlight selected time
+                  : cell.overlaps > 0
+                  ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})` // Red for overlaps
+                  : "rgba(0, 255, 0, 0.3)"; // Green for free time
+
+                return (
+                  <TouchableOpacity
+                    key={hourIndex}
+                    style={[styles.cell, { backgroundColor }]}
+                    onPress={() => cell.overlaps === 0 && handleTap(cell.time)} // Only allow tapping on free slots
+                  />
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -207,8 +234,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     backgroundColor: "#fff",
-    borderColor: "black",
-    borderWidth: 2,
   },
   header: {
     fontSize: 18,
@@ -216,8 +241,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
   timeAxisHeader: {
-    marginTop: 12,
+    marginTop: -9,
   },
   loadingContainer: {
     flex: 1,
@@ -227,14 +256,15 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingBottom: 50,
+    paddingVertical: 20,
   },
   dayColumn: {
     flex: 1,
     marginHorizontal: 2,
   },
   hourLabel: {
-    height: 22,
+    height: 44,
+    width: 40,
     fontSize: 10,
     marginRight: 5,
     textAlign: "right",
