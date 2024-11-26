@@ -19,7 +19,11 @@ export default function ProfileTab({ navigation }) {
       />
       <Stack.Screen name="Calendar" component={CalendarScreen} />
       <Stack.Screen name="CreateCalendar" component={CreateCalendarScreen} />
-      <Stack.Screen name="AddEvent" component={AddEventScreen} />
+      <Stack.Screen
+        name="AddEvent"
+        component={AddEventScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="SetLocation" component={SetLocationScreen} />
       <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
     </Stack.Navigator>

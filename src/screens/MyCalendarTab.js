@@ -16,7 +16,11 @@ export default function MyCalendarTab({ navigation }) {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
-      <Stack.Screen name="AddEvent" component={AddEventScreen} />
+      <Stack.Screen
+        name="AddEvent"
+        component={AddEventScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="SetLocation" component={SetLocationScreen} />
     </Stack.Navigator>
   );
