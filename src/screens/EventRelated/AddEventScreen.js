@@ -183,6 +183,8 @@ export default function AddEventScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Button title="Back to Screen" onPress={() => handleLeaveScreen()} />
+
+      <Timetable calendarId={calendarId} onTimeChange={handleTimeChange} />
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
@@ -195,11 +197,6 @@ export default function AddEventScreen({ route, navigation }) {
           placeholder="Event Description"
           value={eventDescription}
           onChangeText={setEventDescription}
-        />
-
-        <Timetable
-          calendarId={calendarId}
-          onTimeChange={handleTimeChange}
         />
 
         <Button

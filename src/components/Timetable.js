@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { db } from "../firebaseConfig";
 import {
@@ -149,9 +150,27 @@ export default function Timetable({ calendarId, onTimeChange }) {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.header}>Timetable</Text>
       <View style={styles.grid}>
+        <View style={styles.headerRow}>
+          <View style={styles.timeAxisHeader} />
+          {Array.from({ length: 26 }).map((_, i) =>
+            i > 0 ? (
+              i < 14 ? (
+                <Text key={i} style={styles.hourLabel}>
+                  {i == 1 ? "12AM -" : `${i - 1}${i == 13 ? "PM" : "AM"} -`}
+                </Text>
+              ) : (
+                <Text key={i} style={styles.hourLabel}>
+                  {`${i - 13}${i == 25 ? "AM" : "PM"} -`}
+                </Text>
+              )
+            ) : (
+              console.log("start")
+            )
+          )}
+        </View>
         {gridData.map((day, dayIndex) => (
           <View key={dayIndex} style={styles.dayColumn}>
             <Text style={styles.dayLabel}>
@@ -179,7 +198,7 @@ export default function Timetable({ calendarId, onTimeChange }) {
           </View>
         ))}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -188,12 +207,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     backgroundColor: "#fff",
+    borderColor: "black",
+    borderWidth: 2,
   },
   header: {
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
+  },
+  timeAxisHeader: {
+    marginTop: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -203,10 +227,18 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingBottom: 50,
   },
   dayColumn: {
     flex: 1,
     marginHorizontal: 2,
+  },
+  hourLabel: {
+    height: 22,
+    fontSize: 10,
+    marginRight: 5,
+    textAlign: "right",
+    fontWeight: "semibold",
   },
   dayLabel: {
     fontSize: 12,
