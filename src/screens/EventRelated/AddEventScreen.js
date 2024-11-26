@@ -28,7 +28,9 @@ export default function AddEventScreen({ route, navigation }) {
   }); // to check if the draft has been changed
   const [changed, setChanged] = useState(false);
   const [invalidMessage, setInvalidMessage] = useState(null);
-  const [location, setLocation] = useState(route.params.location ? route.params.location : null); // Holds selected location data
+  const [location, setLocation] = useState(
+    route.params.location ? route.params.location : null
+  ); // Holds selected location data
   const { calendarId, shared } = route.params;
   const draftKey = `event_draft_${userId}_${shared ? calendarId : "personal"}`; // different keys for each calendar
 
@@ -100,11 +102,10 @@ export default function AddEventScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    // Retrieve location from route params if set in SetLocationScreen
     if (route.params?.selectedLocation) {
       setLocation(route.params.selectedLocation);
     }
-  }, [userId]);
+  }, [route.params?.selectedLocation]); // Re-run when selectedLocation changes
 
   const handleAddEvent = async () => {
 
@@ -142,7 +143,7 @@ export default function AddEventScreen({ route, navigation }) {
         console.error("Error adding event: ", error);
         Alert.alert("Error", "Could not add event.");
       }
-    }
+    };
 
     if (invalidMessage != null) {
       Alert.alert(
@@ -151,12 +152,14 @@ export default function AddEventScreen({ route, navigation }) {
         invalidMessage.stop && [
           {
             text: "Go Back",
-            onPress: () => console.log('Cancel Pressed'),
+            onPress: () => console.log("Cancel Pressed"),
             style: "cancel",
           },
           {
             text: "Add Event Anyway",
-            onPress: () => {setEvent()},
+            onPress: () => {
+              setEvent();
+            },
           },
         ]
       );
@@ -208,7 +211,7 @@ export default function AddEventScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Button title="Back to Screen" onPress={() => handleLeaveScreen()} />
 
       <Timetable
@@ -327,7 +330,7 @@ export default function AddEventScreen({ route, navigation }) {
 
         <Button title="Add Event" onPress={handleAddEvent} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
