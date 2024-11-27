@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
+import { View, Text, Button, StyleSheet, Alert, TextInput, Platform } from "react-native";
 import { auth } from "../../firebaseConfig";
 import Geocoder from "react-native-geocoding";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
@@ -98,7 +98,7 @@ export default function SetLocationScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.paragraph}> {locationText}</Text>
+      <Text style={styles.paragraph}>{locationText}</Text>
       <View style={styles.searchRow}>
         <TextInput
           style={styles.input}
@@ -122,7 +122,7 @@ export default function SetLocationScreen({ route, navigation }) {
         }}
         showsMyLocationButton
         showsUserLocation
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : null} // Use Google Maps on Android, Apple Maps on iOS
         onPress={handleMapPress} // Add handler for map press
       >
         {selectedLocation && (
