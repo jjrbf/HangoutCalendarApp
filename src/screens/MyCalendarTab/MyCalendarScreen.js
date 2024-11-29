@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
 import { collection, getDocs, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
-import { CalendarSwitcher } from "../../components";
+import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
@@ -210,9 +210,11 @@ export default function MyCalendarScreen({ route, navigation }) {
     }, [userId, deviceCalendarEvents])
   );
 
+  
+
   return (
     <SafeAreaView style={styles.container}>
-      <CalendarSwitcher onDateChange={handleDateChange} />
+      <WeekToMonthCalendar onDateChange={handleDateChange} />
       <Button
         title="Add Event"
         onPress={() =>
@@ -286,7 +288,7 @@ export default function MyCalendarScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    // padding: 16,
   },
   eventsContainer: {
     flex: 1,
