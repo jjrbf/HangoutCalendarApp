@@ -1,74 +1,88 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, StyleSheet, Alert, TextInput } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Alert,
+  TextInput,
+  Platform,
+} from "react-native";
 import { auth } from "../../firebaseConfig";
 import Geocoder from "react-native-geocoding";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
 import { GOOGLE_MAPS_API_KEY } from "../../config";
 
 export default function SetLocationScreen({ route, navigation }) {
-  const userId = auth.currentUser.uid;
+  const userId = auth.currentUser?.uid;
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [searchLocation, setSearchLocation] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const { calendarId, shared } = route.params;
 
+  // Initialize Geocoder with Google Maps API key
   Geocoder.init(GOOGLE_MAPS_API_KEY);
 
   const mapRef = useRef(null);
 
-  // Perform search based on search term entered by the user
+  // Perform a search for a location based on user input
   const performSearch = async () => {
+    if (!searchLocation.trim()) {
+      Alert.alert("Error", "Please enter a valid location.");
+      return;
+    }
     try {
       const json = await Geocoder.from(searchLocation);
-      const location = json.results[0].geometry.location;
+      const locationData = json.results[0].geometry.location;
       const searchedLocation = {
-        latitude: location.lat,
-        longitude: location.lng,
+        latitude: locationData.lat,
+        longitude: locationData.lng,
         latitudeDelta: 0.1,
         longitudeDelta: 0.1,
       };
 
-      // Update the map view to the searched location and set as selected location
+      // Animate the map to the searched location
       mapRef.current?.animateCamera(
         { center: searchedLocation, zoom: 15 },
         { duration: 2000 }
       );
 
-      // Set the selected location for use later
       setSelectedLocation({
-        latitude: location.lat,
-        longitude: location.lng,
+        latitude: locationData.lat,
+        longitude: locationData.lng,
       });
     } catch (error) {
-      console.warn(error);
+      console.error("Geocoding error:", error);
       Alert.alert("Error", "Location not found. Please try again.");
     }
   };
 
+  // Request location permissions and get the user's current location
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErrorMsg("Permission to access location was denied");
-        return;
-      }
-      let location = await Location.getCurrentPositionAsync({});
-      if (location) {
-        setLocation(location);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setErrorMsg("Permission to access location was denied");
+          return;
+        }
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation(currentLocation);
         setSelectedLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
         });
-      } else {
-        setErrorMsg("Current location not obtained");
-        return;
+      } catch (error) {
+        console.error("Location error:", error);
+        setErrorMsg("Failed to obtain current location.");
       }
     })();
   }, []);
 
+  // Handle setting the selected location
   const handleSetLocation = () => {
     if (selectedLocation) {
       console.log("Setting location:", selectedLocation);
@@ -82,11 +96,13 @@ export default function SetLocationScreen({ route, navigation }) {
     }
   };
 
+  // Handle map press to set a new location
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setSelectedLocation({ latitude, longitude });
   };
 
+  // Display appropriate location text
   let locationText = "Waiting..";
   if (errorMsg) {
     locationText = errorMsg;
@@ -98,7 +114,7 @@ export default function SetLocationScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.paragraph}> {locationText}</Text>
+      <Text style={styles.paragraph}>{locationText}</Text>
       <View style={styles.searchRow}>
         <TextInput
           style={styles.input}
@@ -112,27 +128,20 @@ export default function SetLocationScreen({ route, navigation }) {
       </View>
 
       <MapView
-        style={styles.map}
-        ref={mapRef}
-        initialRegion={{
-          latitude: location ? location.coords.latitude : 37.78825,
-          longitude: location ? location.coords.longitude : -122.4324,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        showsMyLocationButton
-        showsUserLocation
-        provider={PROVIDER_GOOGLE}
-        onPress={handleMapPress} // Add handler for map press
-      >
-        {selectedLocation && (
-          <Marker
-            coordinate={selectedLocation}
-            title="Selected Location"
-            description={`Lat: ${selectedLocation.latitude}, Lng: ${selectedLocation.longitude}`}
-          />
-        )}
-      </MapView>
+  style={styles.map}
+  ref={mapRef}
+  initialRegion={{
+    latitude: selectedLocation?.latitude || location?.coords?.latitude || 37.78825,
+    longitude: selectedLocation?.longitude || location?.coords?.longitude || -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  }}
+  showsMyLocationButton
+  showsUserLocation
+  provider={Platform.OS === "android" ? PROVIDER_GOOGLE : null} // Use Apple Maps on iOS
+  onPress={handleMapPress}
+/>
+
 
       <Button title="Set Location" onPress={handleSetLocation} />
     </SafeAreaView>
