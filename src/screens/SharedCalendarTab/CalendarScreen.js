@@ -113,6 +113,12 @@ export default function CalendarScreen({ route, navigation }) {
       {calendar && (
         <>
           <Text style={styles.calendarName}>{calendar.name}</Text>
+          <Button
+            title="Add Event"
+            onPress={() =>
+              navigation.navigate("AddEvent", { calendarId: calendarId, shared: true })
+            }
+          />
           <Text style={styles.sectionTitle}>Members:</Text>
           <FlatList
             data={
@@ -140,12 +146,6 @@ export default function CalendarScreen({ route, navigation }) {
           ) : (
             <Text style={styles.noEventsText}>No events added yet.</Text>
           )}
-          <Button
-            title="Add Event"
-            onPress={() =>
-              navigation.navigate("AddEvent", { calendarId: calendarId, shared: true })
-            }
-          />
         </>
       )}
     </View>

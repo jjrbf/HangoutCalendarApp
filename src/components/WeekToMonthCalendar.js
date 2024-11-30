@@ -273,23 +273,28 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
                       return (
                         <TouchableOpacity
                         key={dayIndex}
-                        onPress={() => onDaySelect(day)} // Call onDaySelect
+                        onPress={() => onDaySelect(day)}
                         style={[
-                          styles.dayContainer,
-                          selectedDay &&
-                          selectedDay.getDate() === day &&
-                          selectedDay.getMonth() + 1 === currentDate.month &&
-                          selectedDay.getFullYear() === currentDate.year
+                            styles.dayContainer,
+                            selectedDay &&
+                            selectedDay.getDate() === day &&
+                            selectedDay.getMonth() + 1 === currentDate.month &&
+                            selectedDay.getFullYear() === currentDate.year
                             ? styles.selectedDay
+                            : isToday
+                            ? styles.today
                             : null,
                         ]}>
-                          <Text
+                        <Text
                             style={[
-                              styles.dayText,
-                              isSelected
-                                ? styles.selectedDayText // Apply selected text style first
+                            styles.dayText,
+                            selectedDay &&
+                            selectedDay.getDate() === day &&
+                            selectedDay.getMonth() + 1 === currentDate.month &&
+                            selectedDay.getFullYear() === currentDate.year
+                                ? styles.selectedDayText
                                 : isToday
-                                ? styles.todayText // Apply today text style only if not selected
+                                ? styles.todayText
                                 : null,
                             ]}>
                             {day || ''}
@@ -331,7 +336,7 @@ const styles = StyleSheet.create({
   },
   viewIndicatorText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
   },
   daysOfWeek: {
@@ -339,6 +344,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
+    marginHorizontal: 2,
     backgroundColor: '#e3f2fd',
     paddingVertical: 5,
   },
@@ -379,14 +385,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
+
+    // iOS dropshadow
     shadowColor: '#ddd',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 4,
+
+    // Android dropshadow
+    elevation: 6,
   },
   dragBarIndicator: {
     width: 40,
