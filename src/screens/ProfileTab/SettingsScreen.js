@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { Text, Button, Alert, StyleSheet, View, Image } from "react-native";
+import { Text, Alert, StyleSheet, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Calendar from "expo-calendar";
-import { Picker } from "@react-native-picker/picker";
-import { auth } from "../../firebaseConfig";
-import { signOut } from "firebase/auth";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import * as ImagePicker from "expo-image-picker";
-import { db } from "../../firebaseConfig";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function SettingsScreen({ navigation }) {
-  const userId = auth.currentUser.uid;
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null); // For storing the profile picture URL
+
+  useEffect(() => {
+    // Set navigation header
+    navigation.setOptions({
+      headerTitle: "Settings",
+      headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
+      headerTitleAlign: "center",
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   async function fetchCalendars() {
     try {
@@ -43,83 +44,6 @@ export default function SettingsScreen({ navigation }) {
       Alert.alert("Error", "An error occurred while fetching calendars.");
     }
   }
-
-  // Fetch user profile picture from Firestore
-  useEffect(() => {
-    const fetchProfilePicture = async () => {
-      try {
-        const userDocRef = doc(db, "users", userId);
-        const userSnapshot = await getDoc(userDocRef);
-
-        if (userSnapshot.exists()) {
-          setProfilePicture(userSnapshot.data().profilePicture);
-        }
-      } catch (error) {
-        console.error("Error fetching profile picture:", error);
-      }
-    };
-
-    fetchProfilePicture();
-  }, []);
-
-  const handleUploadProfilePicture = async () => {
-    // Ask for permission to access the gallery
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Denied",
-        "Permission to access gallery was denied"
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      const imageUri = result.assets[0].uri;
-      const storage = getStorage();
-      const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-
-      try {
-        await uploadBytes(storageRef, blob);
-        const downloadURL = await getDownloadURL(storageRef);
-
-        // Update the profile picture URL in Firestore
-        const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { profilePicture: downloadURL });
-
-        setProfilePicture(downloadURL); // Update local state for immediate UI update
-        Alert.alert("Success", "Profile picture uploaded successfully!");
-      } catch (error) {
-        console.error("Error uploading profile picture:", error);
-        Alert.alert("Error", "Could not upload profile picture.");
-      }
-    }
-  };
-
-  const handleDeleteProfilePicture = async () => {
-    const storage = getStorage();
-    const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
-
-    try {
-      await deleteObject(storageRef); // Delete the image from Firebase Storage
-
-      // Remove the profile picture URL from Firestore
-      const userDocRef = doc(db, "users", userId);
-      await updateDoc(userDocRef, { profilePicture: null });
-
-      setProfilePicture(null); // Update local state for immediate UI update
-      Alert.alert("Success", "Profile picture deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting profile picture:", error);
-      Alert.alert("Error", "Could not delete profile picture.");
-    }
-  };
 
   const handleSaveCalendar = async () => {
     try {
@@ -143,43 +67,10 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.navigate("SignIn");
-    } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Logout Failed", error.message);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-
-      {/* Profile Picture Section */}
-      <Text style={styles.header}>Profile Picture:</Text>
-      {profilePicture ? (
-        <Image source={{ uri: profilePicture }} style={styles.profileImage} />
-      ) : (
-        <Image
-          source={require("../../../assets/profile-picture-default.png")} // Default image
-          style={styles.profileImage}
-        />
-      )}
-      <Button
-        title="Upload Profile Picture"
-        onPress={handleUploadProfilePicture}
-      />
-      <Button
-        title="Delete Profile Picture"
-        onPress={handleDeleteProfilePicture}
-        disabled={!profilePicture}
-      />
-
-      <Text style={styles.header}>Import a Calendar:</Text>
-      <Button title="Import Calendars" onPress={fetchCalendars} />
+      {/* Import Calendar Section */}
+      <Text style={styles.header}>Import Calendar</Text>
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={selectedCalendarId}
@@ -195,9 +86,13 @@ export default function SettingsScreen({ navigation }) {
             />
           ))}
         </Picker>
-        <Button title="Save Calendar" onPress={handleSaveCalendar} />
       </View>
-      <Button title="Logout" onPress={handleLogout} />
+      <TouchableOpacity style={styles.fetchCalendarsButton} onPress={fetchCalendars}>
+        <Text style={styles.fetchCalendarsButtonText}>Fetch Calendars</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.saveCalendarButton} onPress={handleSaveCalendar}>
+        <Text style={styles.saveCalendarButtonText}>Save Calendar</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -206,34 +101,52 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    alignItems: "center",
+    backgroundColor: "#fff",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
+  backButton: {
+    marginLeft: 16,
   },
   header: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   pickerContainer: {
     width: "100%",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 150,
   },
   calendarPicker: {
     width: "90%",
-    height: 100,
-    backgroundColor: "#f0f0f0",
+    height: 50,
+    backgroundColor: "#f9f9f9",
     borderRadius: 10,
+    marginBottom: 12,
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
+  fetchCalendarsButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  fetchCalendarsButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  saveCalendarButton: {
+    backgroundColor: "#dedede", // Grey button
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 16, // Adds space below the Save button
+  },
+  saveCalendarButtonText: {
+    color: "#333", // Dark grey text
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

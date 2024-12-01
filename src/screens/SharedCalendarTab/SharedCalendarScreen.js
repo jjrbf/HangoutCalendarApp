@@ -103,36 +103,33 @@ export default function SharedCalendarScreen({ navigation }) {
   );
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        setIsFilterMenuVisible(false);
-        Keyboard.dismiss();
-      }}
-    >
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Shared Calendars</Text>
-          <View style={styles.headerIcons}>
-            {/* Filter Icon */}
-            <Pressable
-              onPress={() => setIsFilterMenuVisible(!isFilterMenuVisible)}
-              style={styles.iconButton}
-            >
-              <Icon name="filter-variant" size={28} color="black" />
-            </Pressable>
-            {/* Add Icon */}
-            <Pressable
-              onPress={() => navigation.navigate("CreateCalendar")}
-              style={styles.iconButton}
-            >
-              <Icon name="plus" size={28} color="black" />
-            </Pressable>
-          </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Shared Calendars</Text>
+        <View style={styles.headerIcons}>
+          {/* Filter Icon */}
+          <Pressable
+            onPress={() => setIsFilterMenuVisible(!isFilterMenuVisible)}
+            style={styles.iconButton}
+          >
+            <Icon name="filter-variant" size={28} color="black" />
+          </Pressable>
+          {/* Add Icon */}
+          <Pressable
+            onPress={() => navigation.navigate("CreateCalendar")}
+            style={styles.iconButton}
+          >
+            <Icon name="plus" size={28} color="black" />
+          </Pressable>
         </View>
+      </View>
 
-        {/* Filter Dropdown */}
-        {isFilterMenuVisible && (
+      {/* Filter Dropdown */}
+      {isFilterMenuVisible && (
+        <TouchableWithoutFeedback
+          onPress={() => setIsFilterMenuVisible(false)} // Close the menu when tapping outside
+        >
           <View style={styles.dropdown}>
             {["All Calendars", "Owned by You", "Shared with You"].map(
               (filterOption) => (
@@ -143,8 +140,8 @@ export default function SharedCalendarScreen({ navigation }) {
                     filter === filterOption && styles.activeDropdownItem,
                   ]}
                   onPress={() => {
-                    setFilter(filterOption);
-                    setIsFilterMenuVisible(false);
+                    setFilter(filterOption); // Set the selected filter
+                    setIsFilterMenuVisible(false); // Close the dropdown
                   }}
                 >
                   <Text style={styles.dropdownText}>{filterOption}</Text>
@@ -152,32 +149,33 @@ export default function SharedCalendarScreen({ navigation }) {
               )
             )}
           </View>
-        )}
+        </TouchableWithoutFeedback>
+      )}
 
-        {/* Search Bar */}
-        <View style={styles.searchBarContainer}>
-          <Icon name="magnify" size={24} color="#888" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search calendars..."
-            placeholderTextColor="#888"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
 
-        {/* Filtered List */}
-        <FlatList
-          data={filteredCalendars()}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCalendar}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No calendars found.</Text>
-          }
-          contentContainerStyle={styles.flatListContent} // Add padding to FlatList content
+      {/* Search Bar */}
+      <View style={styles.searchBarContainer}>
+        <Icon name="magnify" size={24} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search calendars"
+          placeholderTextColor="#888"
+          value={searchText}
+          onChangeText={setSearchText}
         />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      </View>
+
+      {/* Filtered List */}
+      <FlatList
+        data={filteredCalendars()}
+        keyExtractor={(item) => item.id}
+        renderItem={renderCalendar}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No calendars found.</Text>
+        }
+        contentContainerStyle={styles.flatListContent} // Add padding to FlatList content
+      />
+    </SafeAreaView>
   );
 }
 
