@@ -70,7 +70,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       {/* Import Calendar Section */}
-      <Text style={styles.header}>Import Calendar</Text>
+      <Text style={styles.header}>Add Calendar</Text>
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={selectedCalendarId}
@@ -88,7 +88,7 @@ export default function SettingsScreen({ navigation }) {
         </Picker>
       </View>
       <TouchableOpacity style={styles.fetchCalendarsButton} onPress={fetchCalendars}>
-        <Text style={styles.fetchCalendarsButtonText}>Fetch Calendars</Text>
+        <Text style={styles.fetchCalendarsButtonText}>Import Calendars</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.saveCalendarButton} onPress={handleSaveCalendar}>
         <Text style={styles.saveCalendarButtonText}>Save Calendar</Text>

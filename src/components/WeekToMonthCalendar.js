@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  Platform,
-  StatusBar,
-  TouchableOpacity,
+  View, SafeAreaView, StyleSheet, Text, TouchableOpacity,
 } from 'react-native';
 import {
-  GestureHandlerRootView,
-  Gesture,
-  GestureDetector,
+  GestureHandlerRootView, Gesture, GestureDetector,
 } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
+import Animated, { 
+  useSharedValue, useAnimatedStyle, withSpring,
 } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { auth } from "../firebaseConfig";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const rowHeight = 50; // Height of a single week row
 const dragBarHeight = 20; // Fixed height for the drag bar
+
+// Blue Calendar Color Theme //
+const lightDarkColor = '#fff';
+const monthBar = '#007bff';
+const weekBar = '#e3f2fd';
+const weekBarText = '#007bff';
+const todayUnselectedColor = '#d3d3d3';
+const calendarColor = '#fff';
+
+// Grey Calendar Color Theme //
+// const monthBar = '#eee';
+// const weekBar = '#eee';
+// const weekBarText = '#464646';
+// const lightDarkColor = '#000';
+// const todayUnselectedColor = '#bbb';
+// const calendarColor = '#eee';
 
 const orderDaysOfWeek = (startDayOfWeek = 0) => {
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -46,8 +55,10 @@ const getMonthName = (monthNumber) => {
 };
 
 const WeekToMonthCalendar = ({ onDateChange }) => {
-  const today = new Date();
-  //const today = new Date(2026, 1, 15); // FOR TESTING - Uncomment to test
+  // const today = new Date();
+  const today = new Date(2024, 10, 27); // FOR TESTING - Uncomment to test
+
+  const navigation = useNavigation();
 
   // States
   const [currentDate, setCurrentDate] = useState({
@@ -232,17 +243,52 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
     });
   };
 
+  const handleJumpToToday = () => {
+    setCurrentDate({
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+    });
+    setSelectedDay(today); // Reset selected day to today
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const weekOfToday = Math.ceil(
+      (today.getDate() + firstDayOfMonth.getDay()) / 7
+    );
+    setCurrentWeek(weekOfToday); // Reset current week to today's week
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, styles.safeArea]}>
         {/* Month and Days of the Week at the Top */}
-        <View style={styles.viewIndicator}>
-          <TouchableOpacity onPress={handleMonthClick} activeOpacity={0.7}>
-            <Text style={styles.viewIndicatorText}>
-              {getMonthName(currentDate.month)}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.header}>
+          {/* Month Text */}
+          <Text style={styles.monthText} onPress={handleMonthClick}>
+            {getMonthName(currentDate.month)}
+          </Text>
+
+          {/* Header Buttons */}
+          <View style={styles.headerButtons}>
+            {/* Jump to Today Button */}
+            <TouchableOpacity onPress={handleJumpToToday} style={styles.todayButton}>
+              <Text style={styles.todayButtonText}>{today.getDate()}</Text>
+            </TouchableOpacity>
+
+            {/* Add Event Button */}
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("AddEvent", {
+                  calendarId: `personal_calendar_${auth.currentUser.uid}`,
+                })
+              }
+              style={styles.addButton}
+            >
+              {/* REMEMBER TO CHANGE THIS COLOR TOO! */}
+              <MaterialCommunityIcons name="plus" size={28} color="#fff" /> 
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Week Text */}
         <View style={styles.daysOfWeek}>
           {daysOfWeek.map((day, index) => (
             <Text key={index} style={styles.dayOfWeek}>
@@ -323,39 +369,77 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  safeArea: {
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
   },
   viewIndicator: {
-    padding: 10,
+    flexDirection: 'row', // Align children in a row
+    justifyContent: 'space-between', // Space out the title and icon
+    alignItems: 'center', // Center align the items vertically
+    paddingVertical: 12,
+    paddingHorizontal: 20, // Use padding for consistent spacing
     backgroundColor: '#007bff',
-    alignItems: 'flex-start',
-    paddingLeft: 20,
   },
   viewIndicatorText: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Space between the title and buttons
+    alignItems: "center",
+    paddingLeft: 20,
+    paddingVertical: 12,
+    backgroundColor: monthBar,
+  },
+  monthText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: lightDarkColor,
+  },
+  headerButtons: {
+    flexDirection: "row", // Align buttons horizontally
+    alignItems: "center",
+  },
+  addButton: {
+    marginRight: 15,
+    padding: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  todayButton: {
+    borderWidth: 2,
+    borderColor: lightDarkColor,
+    borderRadius: 2,
+    // padding: 4,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 28,
+  },
+  todayButtonText: {
+    color: lightDarkColor,
+    fontSize: 12,
+    fontWeight: '800',
   },
   daysOfWeek: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    marginHorizontal: 2,
-    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 22,
+    backgroundColor: weekBar,
     paddingVertical: 5,
   },
   dayOfWeek: {
-    fontSize: 14,
-    color: '#007bff',
+    fontSize: 16,
+    color: weekBarText,
     fontWeight: 'bold',
   },
   calendar: {
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: calendarColor,
     overflow: 'hidden',
   },
   row: {
@@ -364,7 +448,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: rowHeight,
     paddingHorizontal: 8,
-    backgroundColor: '#fff',
+    backgroundColor: calendarColor,
   },
   dayContainer: {
     width: 40,
@@ -373,18 +457,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
   },
-  dayText: { fontSize: 16 },
+  dayText: { fontSize: 16, fontWeight: '500', color: '#464646', },
   selectedDay: { backgroundColor: '#007bff' },
   selectedDayText: { color: '#fff' },
-  today: { backgroundColor: '#d3d3d3' },
-  todayText: { color: '#000' },
+  today: { backgroundColor: todayUnselectedColor },
+  todayText: { color: '#464646' },
   dragBar: {
     height: dragBarHeight,
-    backgroundColor: '#fff',
+    backgroundColor: calendarColor,
     justifyContent: 'center',
     alignItems: 'center',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
 
     // iOS dropshadow
     shadowColor: '#ddd',

@@ -215,14 +215,6 @@ export default function MyCalendarScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <WeekToMonthCalendar onDateChange={handleDateChange} />
-      <Button
-        title="Add Event"
-        onPress={() =>
-          navigation.navigate("AddEvent", {
-            calendarId: `personal_calendar_${userId}`,
-          })
-        }
-      />
       <View style={styles.eventsContainer}>
         <FlatList
           data={filteredEvents}
@@ -289,6 +281,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // padding: 16,
+    backgroundColor: '#fff', 
   },
   eventsContainer: {
     flex: 1,
