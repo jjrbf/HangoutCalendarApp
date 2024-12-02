@@ -254,6 +254,9 @@ const styles = StyleSheet.create({
   ownerItem: {
     backgroundColor: "#dfe7fd",
   },
+  memberInfo: {
+    marginLeft: 12,
+  },
   memberName: {
     fontSize: 16,
     fontWeight: "bold",
