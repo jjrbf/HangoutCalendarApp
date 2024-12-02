@@ -56,7 +56,7 @@ const getMonthName = (monthNumber) => {
 
 const WeekToMonthCalendar = ({ onDateChange }) => {
   // const today = new Date();
-  const today = new Date(2024, 10, 27); // FOR TESTING - Uncomment to test
+  const today = new Date(2024, 10, 29); // FOR TESTING - Uncomment to test
 
   const navigation = useNavigation();
 
@@ -359,6 +359,7 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
         <GestureDetector gesture={dragBarGesture}>
           <View style={styles.dragBar}>
             <View style={styles.dragBarIndicator} />
+            {/* <View style={styles.dragBarBorder} /> */}
           </View>
         </GestureDetector>
       </SafeAreaView>
@@ -412,9 +413,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: lightDarkColor,
     borderRadius: 2,
-    // padding: 4,
-    width: 24,
-    height: 24,
+    paddingLeft: 1,
+    width: 25,
+    height: 25,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 28,
@@ -478,6 +479,13 @@ const styles = StyleSheet.create({
 
     // Android dropshadow
     elevation: 6,
+  },
+  dragBarBorder: {
+    position: 'absolute',
+    bottom: 0,
+    height: 1,
+    width: '100%', 
+    backgroundColor: '#ccc',
   },
   dragBarIndicator: {
     width: 40,
