@@ -1,16 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  Alert,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { db, auth } from "../../firebaseConfig";
+import { ProfilePicture } from "../../components"; // Ensure this is imported
 import {
   collection,
   getDocs,
@@ -20,6 +11,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function CreateCalendarScreen({ navigation }) {
   const userId = auth.currentUser.uid;
@@ -28,40 +20,34 @@ export default function CreateCalendarScreen({ navigation }) {
   const [members, setMembers] = useState([]);
   const [friends, setFriends] = useState([]);
 
-  // Fetch user data from Firestore
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const userDoc = await getDoc(doc(db, "users", userId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-
-          // Fetch friends details
           const friendUids = userData.friends || [];
           const friendPromises = friendUids.map((friendUid) =>
             getDoc(doc(db, "users", friendUid))
           );
           const friendDocs = await Promise.all(friendPromises);
-
           const friendList = friendDocs
             .filter((doc) => doc.exists())
             .map((doc) => ({
               id: doc.id,
               name: doc.data().name,
               username: doc.data().username,
+              profilePicture: doc.data().profilePicture || null, // Assuming a profilePicture field exists
             }));
-
           setFriends(friendList);
-        } else {
-          console.error("No such user document!");
         }
       } catch (error) {
-        console.error("Error fetching friend data: ", error);
+        console.error("Error fetching friends:", error);
       }
     };
 
     fetchUserData();
-  }, [userId]); // might have to change when it updates
+  }, [userId]);
 
   const handleCalendarCreation = async () => {
     if (!calendarName || members.length === 0) {
@@ -71,8 +57,6 @@ export default function CreateCalendarScreen({ navigation }) {
 
     try {
       const calendarsCollection = collection(db, "calendars");
-
-      // Check if calendar already exists
       const querySnapshot = await getDocs(
         query(
           calendarsCollection,
@@ -89,7 +73,6 @@ export default function CreateCalendarScreen({ navigation }) {
         return;
       }
 
-      // Automatically generate unique ID
       await addDoc(calendarsCollection, {
         ownerId: userId,
         name: calendarName,
@@ -97,110 +80,136 @@ export default function CreateCalendarScreen({ navigation }) {
         createdAt: new Date(),
       });
 
-      Alert.alert(
-        "Calendar Created!",
-        "Your shared calendar has been created."
-      );
+      Alert.alert("Success", "Your calendar has been created!");
       navigation.navigate("SharedCalendar");
     } catch (error) {
-      console.error("Create Calendar Error:", error);
-      Alert.alert("Calendar Creation Failed", error.message);
+      console.error("Error creating calendar:", error);
+      Alert.alert("Error", "Could not create calendar.");
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Button
-        title="Back to Screen"
-        onPress={() => navigation.navigate("SharedCalendar")}
-      />
-      <View>
-        <TextInput
-          style={styles.input}
-          placeholder="Calendar Name"
-          value={calendarName}
-          onChangeText={setCalendarName}
-        />
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: "Create Calendar",
+      headerTitleStyle: { fontSize: 24, fontWeight: "bold", color: "black" },
+      headerTitleAlign: "center",
+      headerBackTitleVisible: false,
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 16 }}>
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
-        <Text>Friends:</Text>
-        {friends.length > 0 ? (
-          <FlatList
-            data={friends}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.friendItem}>
+  return (
+    <View style={styles.container}>
+      {/* Calendar Name Input */}
+      <TextInput
+        style={styles.input}
+        placeholder="Calendar name"
+        value={calendarName}
+        onChangeText={setCalendarName}
+        placeholderTextColor="#333"
+      />
+
+      {/* Friends List */}
+      <Text style={styles.sectionTitle}>Add Friends:</Text>
+      {friends.length > 0 ? (
+        <FlatList
+          data={friends}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.friendItem}>
+              <View style={styles.friendDetails}>
+                {/* Profile Picture */}
+                <ProfilePicture userId={item.id} size={50} />
                 <View style={styles.friendInfo}>
                   <Text style={styles.friendName}>{item.name}</Text>
                   <Text style={styles.friendUsername}>@{item.username}</Text>
                 </View>
-                <TouchableOpacity
+              </View>
+              <TouchableOpacity
+                style={
+                  members.includes(item.id) ? styles.removeButton : styles.addButton
+                }
+                onPress={() => {
+                  if (members.includes(item.id)) {
+                    setMembers((prevMembers) =>
+                      prevMembers.filter((memberId) => memberId !== item.id)
+                    );
+                  } else {
+                    setMembers((prevMembers) => [...prevMembers, item.id]);
+                  }
+                }}
+              >
+                <Text
                   style={
                     members.includes(item.id)
-                      ? styles.removeButton
-                      : styles.addButton
+                      ? styles.removeButtonText
+                      : styles.addButtonText
                   }
-                  onPress={() => {
-                    if (members.includes(item.id)) {
-                      // Remove friend from members
-                      setMembers((prevMembers) =>
-                        prevMembers.filter((memberId) => memberId !== item.id)
-                      );
-                    } else {
-                      // Add friend to members
-                      setMembers((prevMembers) => [...prevMembers, item.id]);
-                    }
-                  }}
                 >
-                  <Text
-                    style={
-                      members.includes(item.id)
-                        ? styles.removeButtonText
-                        : styles.addButtonText
-                    }
-                  >
-                    {members.includes(item.id) ? "Remove" : "Add"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        ) : (
-          <Text style={styles.noFriendsText}>
-            No friends added yet. Add one in the profile tab to add friends to
-            your shared calendar!
-          </Text>
-        )}
+                  {members.includes(item.id) ? "Remove" : "Add"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      ) : (
+        <Text style={styles.noFriendsText}>
+          No friends found. Add friends to include them in your calendar!
+        </Text>
+      )}
 
-        <Button title="Create Calendar" onPress={handleCalendarCreation} />
-      </View>
-    </SafeAreaView>
+      {/* Create Calendar Button */}
+      <TouchableOpacity style={styles.createButton} onPress={handleCalendarCreation}>
+        <Text style={styles.createButtonText}>Create Calendar</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
   },
   input: {
-    height: 40,
-    borderColor: "gray",
+    width: "100%",
+    alignSelf: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    marginTop: 10,
-    marginBottom: 10,
-    padding: 10,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    marginBottom: 15,
+    backgroundColor: "#fff",
+    fontSize: 16,
   },
   friendItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    width: "100%",
+    padding: 12,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  friendDetails: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   friendInfo: {
-    flex: 1,
+    marginLeft: 12,
   },
   friendName: {
     fontSize: 16,
@@ -208,33 +217,44 @@ const styles = StyleSheet.create({
   },
   friendUsername: {
     fontSize: 14,
-    color: "#555",
+    color: "#666",
   },
   addButton: {
-    backgroundColor: "#4CAF50", // Green
-    paddingVertical: 6,
+    backgroundColor: "#4CAF50",
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 5,
+    borderRadius: 8,
   },
   removeButton: {
-    backgroundColor: "#F44336", // Red
-    paddingVertical: 6,
+    backgroundColor: "#E63946",
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 5,
+    borderRadius: 8,
   },
   addButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 14,
   },
   removeButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 14,
   },
   noFriendsText: {
-    marginVertical: 10,
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    marginVertical: 20,
+  },
+  createButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
-    color: "#555",
   },
 });

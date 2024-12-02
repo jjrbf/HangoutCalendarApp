@@ -163,11 +163,13 @@ export default function CalendarScreen({ route, navigation }) {
         <>
           <TouchableOpacity
             style={styles.addEventButton}
-            onPress={() => Alert.alert("Add Event", "Event creation coming soon!")}
+            onPress={() =>
+              navigation.navigate("AddEvent", { calendarId: calendarId, shared: true })
+            }
           >
-            <Text style={styles.addEventText}>Add Event</Text>
+            <Text style={styles.addEventText}>Add Group Event</Text>
           </TouchableOpacity>
-          <Text style={styles.sectionTitle}>Events:</Text>
+          <Text style={styles.sectionTitle}>Group Events:</Text>
           {events.length > 0 ? (
             <FlatList
               data={events}

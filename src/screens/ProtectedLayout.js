@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Platform } from "react-native";
 import MyCalendarTab from "./MyCalendarTab.js";
 import SharedCalendarsTab from "./SharedCalendarsTab.js";
 import ProfileTab from "./ProfileTab.js";
@@ -29,16 +30,17 @@ export default function ProtectedLayout() {
         tabBarInactiveTintColor: "gray",
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '500',
-          marginTop: 5,
+          fontWeight: "500",
+          marginTop: Platform.OS === "ios" ? 0 : 5, // Move text higher on iOS
+          marginBottom: Platform.OS === "ios" ? 12 : 0, // Add spacing below the text for iOS
         },
         tabBarIconStyle: {
-          marginTop: 0, // prevent cutoff
+          marginTop: Platform.OS === "android" ? 5 : 0,
         },
         tabBarStyle: {
-          height: 90,
-          paddingVertical: 10,
-          // backgroundColor: "#e3e3e3", // Background color
+          height: Platform.OS === "android" ? 80 : 85,
+          paddingBottom: Platform.OS === "android" ? 15 : 10,
+          paddingTop: 5,
         },
       })}
     >
