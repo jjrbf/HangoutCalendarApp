@@ -1,135 +1,182 @@
-import React, { useState, useEffect } from "react";
-import { Text, Alert, StyleSheet, View, Image, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
+import React, { useState, useCallback, useEffect } from "react";
 import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { db } from "../../firebaseConfig";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { auth } from "../../firebaseConfig";
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { ProfilePicture } from "../../components";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { db } from "../../firebaseConfig";
 
-export default function EditProfileScreen({ navigation }) {
-  const userId = auth.currentUser.uid;
-  const [profilePicture, setProfilePicture] = useState(null);
+export default function CalendarScreen({ route, navigation }) {
+  const calendarId = route?.params?.calendarId; // Safely access calendarId
+  const [calendar, setCalendar] = useState(null);
+  const [owner, setOwner] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [showMembers, setShowMembers] = useState(false);
 
   useEffect(() => {
-    const fetchProfilePicture = async () => {
-      try {
-        const userDocRef = doc(db, "users", userId);
-        const userSnapshot = await getDoc(userDocRef);
-
-        if (userSnapshot.exists()) {
-          setProfilePicture(userSnapshot.data().profilePicture);
-        }
-      } catch (error) {
-        console.error("Error fetching profile picture:", error);
-      }
-    };
-
-    fetchProfilePicture();
-
-    // Set navigation header
-    navigation.setOptions({
-      headerTitle: "Edit Profile",
-      headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
-      headerTitleAlign: "center",
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="black" />
-        </TouchableOpacity>
-      ),
-    });
-  }, []);
-
-  const handleUploadProfilePicture = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Denied",
-        "Permission to access gallery was denied"
-      );
+    if (!calendarId) {
+      Alert.alert("Error", "Calendar ID is missing.");
+      navigation.goBack();
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+    fetchCalendarDetails();
+  }, [calendarId]);
 
-    if (!result.canceled) {
-      const imageUri = result.assets[0].uri;
-      const storage = getStorage();
-      const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-
-      try {
-        await uploadBytes(storageRef, blob);
-        const downloadURL = await getDownloadURL(storageRef);
-
-        const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, { profilePicture: downloadURL });
-
-        setProfilePicture(downloadURL);
-        Alert.alert("Success", "Profile picture uploaded successfully!");
-      } catch (error) {
-        console.error("Error uploading profile picture:", error);
-        Alert.alert("Error", "Could not upload profile picture.");
-      }
-    }
-  };
-
-  const handleDeleteProfilePicture = async () => {
-    const storage = getStorage();
-    const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
-
+  const fetchCalendarDetails = async () => {
     try {
-      await deleteObject(storageRef);
+      const calendarRef = doc(db, "calendars", calendarId);
+      const calendarDoc = await getDoc(calendarRef);
 
-      const userDocRef = doc(db, "users", userId);
-      await updateDoc(userDocRef, { profilePicture: null });
+      if (!calendarDoc.exists()) {
+        Alert.alert("Error", "Calendar not found.");
+        navigation.goBack();
+        return;
+      }
 
-      setProfilePicture(null);
-      Alert.alert("Success", "Profile picture deleted successfully.");
+      const calendarData = calendarDoc.data();
+      setCalendar(calendarData);
+
+      // Fetch owner details
+      const ownerRef = doc(db, "users", calendarData.ownerId);
+      const ownerDoc = await getDoc(ownerRef);
+      if (ownerDoc.exists()) {
+        setOwner({ id: calendarData.ownerId, ...ownerDoc.data() });
+      }
+
+      // Fetch members
+      const memberDetails = await Promise.all(
+        calendarData.members.map(async (memberId) => {
+          const memberRef = doc(db, "users", memberId);
+          const memberDoc = await getDoc(memberRef);
+          return memberDoc.exists()
+            ? { id: memberId, ...memberDoc.data() }
+            : null;
+        })
+      );
+      setMembers(memberDetails.filter((member) => member));
+
+      // Fetch events
+      const eventsRef = collection(db, "calendars", calendarId, "events");
+      const eventsSnapshot = await getDocs(eventsRef);
+      const fetchedEvents = eventsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setEvents(fetchedEvents);
     } catch (error) {
-      console.error("Error deleting profile picture:", error);
-      Alert.alert("Error", "Could not delete profile picture.");
+      console.error("Error fetching calendar details:", error);
+      Alert.alert("Error", "Unable to fetch calendar details.");
     }
   };
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            if (showMembers) {
+              setShowMembers(false); // Go back to calendar view
+            } else {
+              navigation.goBack(); // Exit the screen
+            }
+          }}
+        >
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+      headerTitle: showMembers ? "Members" : calendar?.name || "Calendar",
+      headerTitleAlign: "center",
+      headerRight: () =>
+        !showMembers ? (
+          <TouchableOpacity
+            style={styles.headerRightButton}
+            onPress={() => setShowMembers(true)}
+          >
+            <Icon name="account-group" size={24} color="black" />
+          </TouchableOpacity>
+        ) : null,
+    });
+  }, [navigation, calendar, showMembers]);
+
+  const renderEvent = ({ item }) => (
+    <TouchableOpacity style={styles.eventItem}>
+      <Text style={styles.eventTitle}>{item.title}</Text>
+      <Text>{`Start: ${item.startDate.toDate().toLocaleString()}`}</Text>
+      <Text>{`End: ${item.endDate.toDate().toLocaleString()}`}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderMember = ({ item }) => (
+    <View
+      style={[
+        styles.memberItem,
+        item.id === calendar?.ownerId ? styles.ownerItem : {},
+      ]}
+    >
+      <ProfilePicture userId={item.id} size={50} />
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>
+          {item.name} {item.id === calendar?.ownerId && "(Owner)"}
+        </Text>
+        <Text style={styles.memberUsername}>@{item.username}</Text>
+      </View>
+    </View>
+  );
+
+  if (showMembers) {
+    return (
+      <View style={styles.container}>
+        <FlatList
+          data={
+            owner
+              ? [
+                  owner,
+                  ...members.filter((member) => member.id !== calendar?.ownerId),
+                ]
+              : members
+          }
+          keyExtractor={(item) => item.id}
+          renderItem={renderMember}
+          style={styles.list}
+        />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Profile Picture */}
-      {profilePicture ? (
-        <Image source={{ uri: profilePicture }} style={styles.profileImage} />
-      ) : (
-        <Image
-          source={require("../../../assets/profile-picture-default.png")}
-          style={styles.profileImage}
-        />
+    <View style={styles.container}>
+      {calendar && (
+        <>
+          <TouchableOpacity
+            style={styles.addEventButton}
+            onPress={() => Alert.alert("Add Event", "Event creation coming soon!")}
+          >
+            <Text style={styles.addEventText}>Add Event</Text>
+          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Events:</Text>
+          {events.length > 0 ? (
+            <FlatList
+              data={events}
+              keyExtractor={(item) => item.id}
+              renderItem={renderEvent}
+              style={styles.list}
+            />
+          ) : (
+            <Text style={styles.noEventsText}>No events added yet.</Text>
+          )}
+        </>
       )}
-
-      {/* Upload Profile Picture */}
-      <TouchableOpacity style={styles.uploadButton} onPress={handleUploadProfilePicture}>
-        <Text style={styles.uploadButtonText}>Upload Profile Picture</Text>
-      </TouchableOpacity>
-
-      {/* Delete Profile Picture */}
-      <TouchableOpacity
-        style={[styles.deleteButton, !profilePicture && styles.deleteButtonDisabled]}
-        onPress={handleDeleteProfilePicture}
-        disabled={!profilePicture}
-      >
-        <Text style={styles.deleteButtonText}>Delete Profile Picture</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -142,41 +189,65 @@ const styles = StyleSheet.create({
   backButton: {
     marginLeft: 16,
   },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 20, // Space between profile image and buttons
-    marginTop: 40, // Adjustable top margin
-    alignSelf: "center",
+  headerRightButton: {
+    marginRight: 16,
   },
-  uploadButton: {
-    backgroundColor: "#007BFF",
+  addEventButton: {
+    backgroundColor: "#007AFF",
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 8,
     alignItems: "center",
-    marginBottom: 8, // Space between Upload and Delete buttons
+    marginBottom: 16,
   },
-  uploadButtonText: {
+  addEventText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
-  deleteButton: {
-    backgroundColor: "#FF4444",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    marginTop: 6,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 8,
   },
-  deleteButtonDisabled: {
-    backgroundColor: "#ddd",
+  list: {
+    marginBottom: 16,
   },
-  deleteButtonText: {
-    color: "#fff",
+  eventItem: {
+    padding: 12,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  eventTitle: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 16,
+  },
+  memberItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  ownerItem: {
+    backgroundColor: "#dfe7fd",
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  memberUsername: {
+    fontSize: 14,
+    color: "#666",
   },
 });

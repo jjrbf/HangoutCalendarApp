@@ -250,14 +250,13 @@ export default function AddEventScreen({ route, navigation }) {
           Add
         </Text>
       </View>
-
-      <TouchableOpacity
-        onPress={() => setShowTimetable((prev) => !prev)}
-      >
+  
+      <TouchableOpacity onPress={() => setShowTimetable((prev) => !prev)}>
         <Text style={styles.toggleText}>
           {showTimetable ? "Hide available time slots" : "Show available time slots"}
         </Text>
       </TouchableOpacity>
+  
       {showTimetable && (
         <Timetable
           calendarId={calendarId}
@@ -267,6 +266,7 @@ export default function AddEventScreen({ route, navigation }) {
           setInvalidMessage={setInvalidMessage}
         />
       )}
+  
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
@@ -282,9 +282,9 @@ export default function AddEventScreen({ route, navigation }) {
           onChangeText={setEventDescription}
           placeholderTextColor="#333"
         />
-
+  
         <View style={styles.dateTimeContainer}>
-          {/* Start Date and Time Row */}
+          {/* Start Date and Time */}
           <View style={styles.row}>
             <Text style={styles.label}>Start:</Text>
             <TouchableOpacity
@@ -304,7 +304,8 @@ export default function AddEventScreen({ route, navigation }) {
               </Text>
             </TouchableOpacity>
           </View>
-
+  
+          {/* End Date and Time */}
           <View style={styles.row}>
             <Text style={styles.label}>End:</Text>
             <TouchableOpacity
@@ -325,23 +326,21 @@ export default function AddEventScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-
+  
+        {/* Location Section */}
         <View style={styles.locationContainer}>
           <TouchableOpacity
-            style={styles.locationBox} // Grey box style
+            style={styles.locationBox}
             onPress={() =>
-              navigation.navigate("SetLocation", {
-                calendarId: calendarId,
-                shared: shared,
-              })
+              navigation.navigate("SetLocation", { calendarId, shared })
             }
           >
             <View style={styles.locationContent}>
               <Text style={styles.locationLabel}>Add Location:</Text>
               <Text
                 style={styles.locationText}
-                numberOfLines={1} // Limit to one line
-                ellipsizeMode="tail" // Add "..." for overflowing text
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {location
                   ? `Latitude ${location.latitude}, Longitude ${location.longitude}`
@@ -350,10 +349,43 @@ export default function AddEventScreen({ route, navigation }) {
             </View>
           </TouchableOpacity>
         </View>
-
       </View>
+  
+      {/* Start Date Picker Modal */}
+      <DateTimePickerModal
+        isVisible={isStartDatePickerVisible}
+        mode="date"
+        onConfirm={handleStartDateConfirm}
+        onCancel={() => setStartDatePickerVisible(false)}
+      />
+  
+      {/* Start Time Picker Modal */}
+      <DateTimePickerModal
+        isVisible={isStartTimePickerVisible}
+        mode="time"
+        onConfirm={handleStartTimeConfirm}
+        onCancel={() => setStartTimePickerVisible(false)}
+      />
+  
+      {/* End Date Picker Modal */}
+      <DateTimePickerModal
+        isVisible={isEndDatePickerVisible}
+        mode="date"
+        onConfirm={handleEndDateConfirm}
+        onCancel={() => setEndDatePickerVisible(false)}
+      />
+  
+      {/* End Time Picker Modal */}
+      <DateTimePickerModal
+        isVisible={isEndTimePickerVisible}
+        mode="time"
+        onConfirm={handleEndTimeConfirm}
+        onCancel={() => setEndTimePickerVisible(false)}
+      />
     </SafeAreaView>
   );
+  
+  
 }
 
 const styles = StyleSheet.create({

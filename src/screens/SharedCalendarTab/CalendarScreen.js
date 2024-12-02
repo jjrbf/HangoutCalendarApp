@@ -5,20 +5,21 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Button,
   Alert,
 } from "react-native";
-import { auth, db } from "../../firebaseConfig";
 import { ProfilePicture } from "../../components";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { db } from "../../firebaseConfig";
 
 export default function CalendarScreen({ route, navigation }) {
-  const { calendarId } = route.params; // Get the calendarId from route params
+  const { calendarId } = route.params;
   const [calendar, setCalendar] = useState(null);
   const [owner, setOwner] = useState(null);
   const [members, setMembers] = useState([]);
   const [events, setEvents] = useState([]);
+  const [showMembers, setShowMembers] = useState(false); // State to toggle views
 
   const fetchCalendarDetails = async () => {
     try {
@@ -27,6 +28,7 @@ export default function CalendarScreen({ route, navigation }) {
 
       if (!calendarDoc.exists()) {
         Alert.alert("Error", "Calendar not found.");
+        navigation.goBack();
         return;
       }
 
@@ -40,7 +42,7 @@ export default function CalendarScreen({ route, navigation }) {
         setOwner({ id: calendarData.ownerId, ...ownerDoc.data() });
       }
 
-      // Fetch members' details
+      // Fetch members
       const memberDetails = await Promise.all(
         calendarData.members.map(async (memberId) => {
           const memberRef = doc(db, "users", memberId);
@@ -50,7 +52,7 @@ export default function CalendarScreen({ route, navigation }) {
             : null;
         })
       );
-      setMembers(memberDetails.filter((member) => member)); // Filter out null values
+      setMembers(memberDetails.filter((member) => member));
 
       // Fetch events
       const eventsRef = collection(db, "calendars", calendarId, "events");
@@ -66,11 +68,54 @@ export default function CalendarScreen({ route, navigation }) {
     }
   };
 
-  // Refresh data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchCalendarDetails();
     }, [calendarId])
+  );
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (showMembers) {
+              // Navigate back to calendar view
+              setShowMembers(false);
+            } else {
+              // Navigate back to the previous screen
+              navigation.goBack();
+            }
+          }}
+          style={styles.backButton}
+        >
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+      headerTitle: () => (
+        <TouchableOpacity
+          style={styles.headerTitleContainer}
+          onPress={() => setShowMembers(true)} // Open members view
+        >
+          <Text style={styles.headerTitle}>
+            {showMembers ? "Members" : calendar?.name || "Calendar"}
+          </Text>
+          {!showMembers && (
+            <Icon name="chevron-right" size={24} color="black" />
+          )}
+        </TouchableOpacity>
+      ),
+      headerTitleAlign: "center",
+    });
+  }, [navigation, calendar, showMembers]);  
+  
+
+  const renderEvent = ({ item }) => (
+    <TouchableOpacity style={styles.eventItem}>
+      <Text style={styles.eventTitle}>{item.title}</Text>
+      <Text>{`Start: ${item.startDate.toDate().toLocaleString()}`}</Text>
+      <Text>{`End: ${item.endDate.toDate().toLocaleString()}`}</Text>
+    </TouchableOpacity>
   );
 
   const renderMember = ({ item }) => (
@@ -90,51 +135,38 @@ export default function CalendarScreen({ route, navigation }) {
     </View>
   );
 
-  const renderEvent = ({ item }) => (
-    <TouchableOpacity
-      style={styles.eventItem}
-      onPress={() =>
-        navigation.navigate("EventDetails", {
-          eventId: item.id,
-          shared: true,
-          calendarId: calendarId,
-        })
-      }
-    >
-      <Text style={styles.eventTitle}>{item.title}</Text>
-      <Text>{`Start: ${item.startDate.toDate().toLocaleString()}`}</Text>
-      <Text>{`End: ${item.endDate.toDate().toLocaleString()}`}</Text>
-      <Text style={styles.eventDescription}>{item.description}</Text>
-    </TouchableOpacity>
-  );
+  if (showMembers) {
+    // Render members list view
+    return (
+      <View style={styles.container}>
+        <FlatList
+          data={
+            owner
+              ? [
+                  owner,
+                  ...members.filter((member) => member.id !== calendar?.ownerId),
+                ]
+              : members
+          }
+          keyExtractor={(item) => item.id}
+          renderItem={renderMember}
+          style={styles.list}
+        />
+      </View>
+    );
+  }
 
+  // Render main calendar view
   return (
     <View style={styles.container}>
       {calendar && (
         <>
-          <Text style={styles.calendarName}>{calendar.name}</Text>
-          <Button
-            title="Add Event"
-            onPress={() =>
-              navigation.navigate("AddEvent", { calendarId: calendarId, shared: true })
-            }
-          />
-          <Text style={styles.sectionTitle}>Members:</Text>
-          <FlatList
-            data={
-              owner
-                ? [
-                    owner,
-                    ...members.filter(
-                      (member) => member.id !== calendar?.ownerId
-                    ),
-                  ]
-                : members
-            }
-            keyExtractor={(item) => item.id}
-            renderItem={renderMember}
-            style={styles.list}
-          />
+          <TouchableOpacity
+            style={styles.addEventButton}
+            onPress={() => Alert.alert("Add Event", "Event creation coming soon!")}
+          >
+            <Text style={styles.addEventText}>Add Event</Text>
+          </TouchableOpacity>
           <Text style={styles.sectionTitle}>Events:</Text>
           {events.length > 0 ? (
             <FlatList
@@ -158,11 +190,30 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#fff",
   },
-  calendarName: {
-    fontSize: 24,
+  backButton: {
+    marginLeft: 16,
+  },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: "bold",
+    color: "#000",
+  },
+  addEventButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
     marginBottom: 16,
-    textAlign: "center",
+  },
+  addEventText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   sectionTitle: {
     fontSize: 20,
@@ -172,10 +223,26 @@ const styles = StyleSheet.create({
   list: {
     marginBottom: 16,
   },
+  eventItem: {
+    padding: 12,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 16,
+  },
   memberItem: {
-    flex: 1,
     flexDirection: "row",
-    gap: 6,
     alignItems: "center",
     padding: 8,
     backgroundColor: "#f0f0f0",
@@ -192,32 +259,5 @@ const styles = StyleSheet.create({
   memberUsername: {
     fontSize: 14,
     color: "#666",
-  },
-  eventItem: {
-    padding: 12,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  eventDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: "#333",
-  },
-  noEventsText: {
-    fontSize: 16,
-    color: "#999",
-    textAlign: "center",
-    marginTop: 16,
   },
 });
