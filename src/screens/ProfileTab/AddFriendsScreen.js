@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   searchButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 24,
   },

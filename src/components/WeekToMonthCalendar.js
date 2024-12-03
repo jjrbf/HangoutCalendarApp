@@ -12,8 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { auth } from "../firebaseConfig";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const rowHeight = 50; // Height of a single week row
-const dragBarHeight = 20; // Fixed height for the drag bar
+const rowHeight = 50;
+const dragBarHeight = 20;
 
 // Blue Calendar Color Theme //
 const lightDarkColor = '#fff';
@@ -60,13 +60,12 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
 
   const navigation = useNavigation();
 
-  // States
   const [currentDate, setCurrentDate] = useState({
     year: today.getFullYear(),
     month: today.getMonth() + 1,
   });
-  const [selectedDay, setSelectedDay] = useState(today); // Initialize to today
-  const [totalRows, setTotalRows] = useState(6); // Default rows, updated dynamically
+  const [selectedDay, setSelectedDay] = useState(today);
+  const [totalRows, setTotalRows] = useState(6);
   const [currentWeek, setCurrentWeek] = useState(() => {
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     return Math.ceil((today.getDate() + firstDayOfMonth.getDay()) / 7);
@@ -74,13 +73,11 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
 
   const daysOfWeek = orderDaysOfWeek();
 
-  // Dynamically calculate MONTH_HEIGHT based on totalRows
   const WEEK_HEIGHT = rowHeight;
   const MONTH_HEIGHT = totalRows * rowHeight;
 
-  // Shared values for animated height and offset
-  const translateY = useSharedValue(WEEK_HEIGHT); // Starts at week view height
-  const topOffset = useSharedValue(-(currentWeek - 1) * WEEK_HEIGHT); // Offset for rows above current week
+  const translateY = useSharedValue(WEEK_HEIGHT);
+  const topOffset = useSharedValue(-(currentWeek - 1) * WEEK_HEIGHT);
 
   useEffect(() => {
     // Update total rows dynamically based on the month
@@ -91,7 +88,7 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
     setTotalRows(newTotalRows);
 
     if (translateY.value > WEEK_HEIGHT) {
-      translateY.value = withSpring(newTotalRows * rowHeight); // Use new MONTH_HEIGHT here
+      translateY.value = withSpring(newTotalRows * rowHeight);
       topOffset.value = withSpring(0);
     } else {
       topOffset.value = withSpring(-(currentWeek - 1) * WEEK_HEIGHT);
@@ -125,10 +122,10 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
     })
     .onEnd(() => {
       if (translateY.value > WEEK_HEIGHT + (MONTH_HEIGHT - WEEK_HEIGHT) / 2) {
-        translateY.value = withSpring(MONTH_HEIGHT); // Switch to month view
+        translateY.value = withSpring(MONTH_HEIGHT);
         topOffset.value = withSpring(0);
       } else {
-        translateY.value = withSpring(WEEK_HEIGHT); // Switch to week view
+        translateY.value = withSpring(WEEK_HEIGHT);
         topOffset.value = withSpring(-(currentWeek - 1) * WEEK_HEIGHT);
       }
     });
@@ -160,15 +157,14 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
     })
     .onEnd(() => {
       if (translateY.value > WEEK_HEIGHT + (MONTH_HEIGHT - WEEK_HEIGHT) / 2) {
-        translateY.value = withSpring(MONTH_HEIGHT); // Switch to month view
+        translateY.value = withSpring(MONTH_HEIGHT);
         topOffset.value = withSpring(0);
       } else {
-        translateY.value = withSpring(WEEK_HEIGHT); // Switch to week view
+        translateY.value = withSpring(WEEK_HEIGHT);
         topOffset.value = withSpring(-(currentWeek - 1) * WEEK_HEIGHT);
       }
     });
 
-  // Animated styles
   const animatedHeightStyle = useAnimatedStyle(() => ({
     height: translateY.value,
   }));
@@ -181,17 +177,14 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
   function getCalendarRows(year, month) {
     const START_DAY = 0;
 
-    // Calculate the first day of the month
     const firstDayOfMonth = new Date(year, month - 1, 1); // Month is 0-indexed in Date()
     const startPushBack = (firstDayOfMonth.getDay() - START_DAY + 7) % 7;
 
-    // Calculate the number of days in the month
     const daysInMonth = new Date(year, month, 0).getDate();
 
     const rows = [];
     let currentDay = 1;
 
-    // Calculate the maximum number of rows dynamically
     const totalCells = startPushBack + daysInMonth;
     const maxRows = Math.ceil(totalCells / 7);
 
@@ -200,7 +193,7 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
 
       for (let day = 0; day < 7; day++) {
         if (row === 0 && day < startPushBack) {
-          days.push(''); // Blank days before the month starts
+          days.push('');
         } else {
           days.push(currentDay <= daysInMonth ? currentDay : '');
           if (currentDay <= daysInMonth) currentDay++;
@@ -222,7 +215,7 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
       );
       setSelectedDay(selectedDate);
       if (onDateChange) {
-        onDateChange(selectedDate); // Notify parent
+        onDateChange(selectedDate);
       }
     }
   };
@@ -231,14 +224,11 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
     setCurrentDate((prev) => {
       const nextMonth = prev.month === 12 ? 1 : prev.month + 1;
       const nextYear = prev.month === 12 ? prev.year + 1 : prev.year;
-
-      // Update currentDate
       const newDate = { year: nextYear, month: nextMonth };
 
-      // Reset week view to row 1 and select the first day of the new month
-      const firstDayOfMonth = new Date(newDate.year, newDate.month - 1, 1); // First day of the new month
-      setSelectedDay(firstDayOfMonth); // Select the first day
-      setCurrentWeek(1); // Reset to week 1
+      const firstDayOfMonth = new Date(newDate.year, newDate.month - 1, 1);
+      setSelectedDay(firstDayOfMonth);
+      setCurrentWeek(1);
       return newDate;
     });
   };
@@ -248,12 +238,12 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
       year: today.getFullYear(),
       month: today.getMonth() + 1,
     });
-    setSelectedDay(today); // Reset selected day to today
+    setSelectedDay(today);
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const weekOfToday = Math.ceil(
       (today.getDate() + firstDayOfMonth.getDay()) / 7
     );
-    setCurrentWeek(weekOfToday); // Reset current week to today's week
+    setCurrentWeek(weekOfToday);
   };
 
   return (
@@ -373,11 +363,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   viewIndicator: {
-    flexDirection: 'row', // Align children in a row
-    justifyContent: 'space-between', // Space out the title and icon
-    alignItems: 'center', // Center align the items vertically
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 20, // Use padding for consistent spacing
+    paddingHorizontal: 20,
     backgroundColor: '#007bff',
   },
   viewIndicatorText: {
@@ -387,7 +377,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between", // Space between the title and buttons
+    justifyContent: "space-between",
     alignItems: "center",
     paddingLeft: 20,
     paddingVertical: 12,
@@ -399,7 +389,7 @@ const styles = StyleSheet.create({
     color: lightDarkColor,
   },
   headerButtons: {
-    flexDirection: "row", // Align buttons horizontally
+    flexDirection: "row",
     alignItems: "center",
   },
   addButton: {

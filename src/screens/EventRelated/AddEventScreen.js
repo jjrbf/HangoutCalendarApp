@@ -9,6 +9,9 @@ import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 export default function AddEventScreen({ route, navigation }) {
+  const now = new Date(); // Current date and time
+  const fifteenMinutesLater = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes later
+
   const [events, setEvents] = useState([]);
   const [showTimetable, setShowTimetable] = useState(false);
   const userId = auth.currentUser.uid;
@@ -16,8 +19,8 @@ export default function AddEventScreen({ route, navigation }) {
   // State variables for new event
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(now);
+  const [endDate, setEndDate] = useState(fifteenMinutesLater);
   // new date picker stuff
   const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisible] = useState(false);
@@ -44,26 +47,36 @@ export default function AddEventScreen({ route, navigation }) {
         const draft = await AsyncStorage.getItem(draftKey);
         if (draft) {
           const parsedDraft = JSON.parse(draft);
+    
+          const loadedStartDate = new Date(parsedDraft.startDate || new Date());
+          let loadedEndDate = new Date(parsedDraft.endDate || new Date());
+    
+          // Ensure the `endDate` is at least 15 minutes after the `startDate`
+          if (loadedEndDate <= loadedStartDate) {
+            loadedEndDate = new Date(loadedStartDate.getTime() + 15 * 60 * 1000);
+          }
+    
           setEventTitle(parsedDraft.eventTitle || "");
           setEventDescription(parsedDraft.eventDescription || "");
-          setStartDate(new Date(parsedDraft.startDate || new Date()));
-          setEndDate(new Date(parsedDraft.endDate || new Date()));
-
-          // Save draft to a reference state for comparison
+          setStartDate(loadedStartDate);
+          setEndDate(loadedEndDate);
+    
           setOriginalDraft({
             eventTitle: parsedDraft.eventTitle || "",
             eventDescription: parsedDraft.eventDescription || "",
-            startDate: new Date(parsedDraft.startDate || new Date()),
-            endDate: new Date(parsedDraft.endDate || new Date()),
+            startDate: loadedStartDate,
+            endDate: loadedEndDate,
           });
         }
       } catch (error) {
         console.error("Error loading draft: ", error);
       }
     };
-
+    
+  
     loadDraft();
   }, []);
+  
 
   // Save draft when any field changes
   useEffect(() => {
@@ -214,30 +227,83 @@ export default function AddEventScreen({ route, navigation }) {
   };
 
   const handleStartDateConfirm = (date) => {
-    setStartDate(date);
+    const updatedStartDate = new Date(date);
+    updatedStartDate.setHours(startDate.getHours());
+    updatedStartDate.setMinutes(startDate.getMinutes());
+  
+    if (validateEventTiming(updatedStartDate, endDate)) {
+      setStartDate(updatedStartDate);
+    }
     setStartDatePickerVisible(false);
   };
+  
+  const handleEndDateConfirm = (time) => {
+    const updatedEndDate = new Date(endDate);
+    updatedEndDate.setHours(time.getHours());
+    updatedEndDate.setMinutes(time.getMinutes());
+  
+    if (updatedEndDate <= startDate) {
+      // Automatically adjust `endDate` to 15 minutes after `startDate`
+      updatedEndDate.setTime(startDate.getTime() + 15 * 60 * 1000);
+      Alert.alert(
+        "Invalid End Time",
+        "The end time must be after the start time. Adjusting to 15 minutes later."
+      );
+    }
+  
+    setEndDate(updatedEndDate); // Update the state
+    setEndDatePickerVisible(false); // Close the picker
+  };
+  
+  
   
   const handleStartTimeConfirm = (time) => {
     const updatedStartDate = new Date(startDate);
     updatedStartDate.setHours(time.getHours());
     updatedStartDate.setMinutes(time.getMinutes());
+  
+    const updatedEndDate = new Date(endDate);
+  
+    if (updatedEndDate <= updatedStartDate) {
+      updatedEndDate.setTime(updatedStartDate.getTime() + 15 * 60 * 1000); // Add 15 minutes
+      setEndDate(updatedEndDate);
+    }
+  
     setStartDate(updatedStartDate);
     setStartTimePickerVisible(false);
   };
   
-  const handleEndDateConfirm = (date) => {
-    setEndDate(date);
-    setEndDatePickerVisible(false);
-  };
   
   const handleEndTimeConfirm = (time) => {
     const updatedEndDate = new Date(endDate);
     updatedEndDate.setHours(time.getHours());
     updatedEndDate.setMinutes(time.getMinutes());
-    setEndDate(updatedEndDate);
+  
+    if (updatedEndDate <= startDate) {
+      Alert.alert("Invalid Time", "The end time must be after the start time.");
+    } else {
+      setEndDate(updatedEndDate);
+    }
+  
     setEndTimePickerVisible(false);
   };
+  
+
+
+  const validateEventTiming = (startDate, endDate) => {
+    if (endDate <= startDate) {
+      setInvalidMessage({
+        message: "The end time must be after the start time.",
+        stop: true,
+      });
+      return false;
+    }
+  
+    setInvalidMessage(null); // Clear any previous error
+    return true;
+  };
+  
+  
   
 
   return (
@@ -406,12 +472,10 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     fontSize: 18,
-    // fontWeight: 'bold',
     color: "#007bff",
   },
   toggleText: {
     fontSize: 16,
-    // fontWeight: 'bold',
     color: "#007bff",
     textAlign: "center",
     marginVertical: 10,
@@ -478,7 +542,7 @@ const styles = StyleSheet.create({
   },
 
   locationContainer: {
-    marginVertical: 10, // Add spacing around the container
+    marginVertical: 10,
   },
   
   locationBox: {

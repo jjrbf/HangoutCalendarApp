@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#007BFF",
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 8, // Space between Upload and Delete buttons
   },
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF4444",
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 6,
   },

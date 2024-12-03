@@ -4,16 +4,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   Alert,
   TextInput,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { auth } from "../../firebaseConfig";
 import Geocoder from "react-native-geocoding";
-import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { GOOGLE_MAPS_API_KEY } from "../../config";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function SetLocationScreen({ route, navigation }) {
   const userId = auth.currentUser?.uid;
@@ -28,40 +29,19 @@ export default function SetLocationScreen({ route, navigation }) {
 
   const mapRef = useRef(null);
 
-  // Perform a search for a location based on user input
-  const performSearch = async () => {
-    if (!searchLocation.trim()) {
-      Alert.alert("Error", "Please enter a valid location.");
-      return;
-    }
-    try {
-      const json = await Geocoder.from(searchLocation);
-      const locationData = json.results[0].geometry.location;
-      const searchedLocation = {
-        latitude: locationData.lat,
-        longitude: locationData.lng,
-        latitudeDelta: 0.1,
-        longitudeDelta: 0.1,
-      };
-
-      // Animate the map to the searched location
-      mapRef.current?.animateCamera(
-        { center: searchedLocation, zoom: 15 },
-        { duration: 2000 }
-      );
-
-      setSelectedLocation({
-        latitude: locationData.lat,
-        longitude: locationData.lng,
-      });
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      Alert.alert("Error", "Location not found. Please try again.");
-    }
-  };
-
-  // Request location permissions and get the user's current location
   useEffect(() => {
+    // Set navigation header styling
+    navigation.setOptions({
+      headerTitle: "Set Location",
+      headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
+      headerTitleAlign: "center",
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -82,7 +62,36 @@ export default function SetLocationScreen({ route, navigation }) {
     })();
   }, []);
 
-  // Handle setting the selected location
+  const performSearch = async () => {
+    if (!searchLocation.trim()) {
+      Alert.alert("Error", "Please enter a valid location.");
+      return;
+    }
+    try {
+      const json = await Geocoder.from(searchLocation);
+      const locationData = json.results[0].geometry.location;
+      const searchedLocation = {
+        latitude: locationData.lat,
+        longitude: locationData.lng,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+
+      mapRef.current?.animateCamera(
+        { center: searchedLocation, zoom: 15 },
+        { duration: 2000 }
+      );
+
+      setSelectedLocation({
+        latitude: locationData.lat,
+        longitude: locationData.lng,
+      });
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      Alert.alert("Error", "Location not found. Please try again.");
+    }
+  };
+
   const handleSetLocation = () => {
     if (selectedLocation) {
       console.log("Setting location:", selectedLocation);
@@ -96,13 +105,11 @@ export default function SetLocationScreen({ route, navigation }) {
     }
   };
 
-  // Handle map press to set a new location
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setSelectedLocation({ latitude, longitude });
   };
 
-  // Display appropriate location text
   let locationText = "Waiting..";
   if (errorMsg) {
     locationText = errorMsg;
@@ -122,28 +129,32 @@ export default function SetLocationScreen({ route, navigation }) {
           value={searchLocation}
           placeholder="Enter location - name or address"
         />
-        <View style={styles.buttonView}>
-          <Button title="Search" onPress={performSearch} />
-        </View>
+        <TouchableOpacity style={styles.searchButton} onPress={performSearch}>
+          <Text style={styles.searchButtonText}>Search</Text>
+        </TouchableOpacity>
       </View>
 
       <MapView
-  style={styles.map}
-  ref={mapRef}
-  initialRegion={{
-    latitude: selectedLocation?.latitude || location?.coords?.latitude || 37.78825,
-    longitude: selectedLocation?.longitude || location?.coords?.longitude || -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  }}
-  showsMyLocationButton
-  showsUserLocation
-  provider={Platform.OS === "android" ? PROVIDER_GOOGLE : null} // Use Apple Maps on iOS
-  onPress={handleMapPress}
-/>
+        style={styles.map}
+        ref={mapRef}
+        initialRegion={{
+          latitude: selectedLocation?.latitude || location?.coords?.latitude || 37.78825,
+          longitude: selectedLocation?.longitude || location?.coords?.longitude || -122.4324,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        showsMyLocationButton
+        showsUserLocation
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : null}
+        onPress={handleMapPress}
+      />
 
-
-      <Button title="Set Location" onPress={handleSetLocation} />
+      <TouchableOpacity
+        style={styles.setLocationButton}
+        onPress={handleSetLocation}
+      >
+        <Text style={styles.setLocationButtonText}>Set Location</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -152,27 +163,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: "#fff",
+  },
+  backButton: {
+    marginLeft: 16,
+  },
+  paragraph: {
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
+    marginVertical: 16,
+  },
+  searchRow: {
+    flexDirection: "row",
+    marginBottom: 16,
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "black",
-    padding: 5,
-    borderRadius: 5,
-    margin: 10,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
   },
-  paragraph: {
+  searchButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
-    fontSize: 14,
   },
   map: {
+    flex: 1,
     width: "100%",
-    height: "70%",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 16,
   },
-  searchRow: {
-    flexDirection: "row",
+  setLocationButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 16,
   },
-  buttonView: {
-    margin: 10,
+  setLocationButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

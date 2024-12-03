@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, StyleSheet, Alert, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from "react-native";
 import { db, auth } from "../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { ProfilePicture } from "../../components";
 import MapView, { Marker } from "react-native-maps";
 import { GEONAMES_USERNAME } from "../../config.js";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function EventDetailsScreen({ route, navigation }) {
-  const { eventId, shared, calendarId } = route.params; // Get the eventId passed from MyCalendarScreen
+  const { eventId, shared, calendarId } = route.params;
   const [calendar, setCalendar] = useState(null);
   const [owner, setOwner] = useState(null);
   const [members, setMembers] = useState([]);
@@ -29,27 +30,25 @@ export default function EventDetailsScreen({ route, navigation }) {
               id: calendarSnapshot.id,
             });
 
-            // Fetch owner details
             const ownerRef = doc(db, "users", calendarData.ownerId);
             const ownerDoc = await getDoc(ownerRef);
             if (ownerDoc.exists()) {
               setOwner({ id: calendarData.ownerId, ...ownerDoc.data() });
             }
-            // Fetch members' details
+
             const memberDetails = await Promise.all(
               calendarData.members.map(async (memberId) => {
                 const memberRef = doc(db, "users", memberId);
                 const memberDoc = await getDoc(memberRef);
-                return memberDoc.exists()
-                  ? { id: memberId, ...memberDoc.data() }
-                  : null;
+                return memberDoc.exists() ? { id: memberId, ...memberDoc.data() } : null;
               })
             );
-            setMembers(memberDetails.filter((member) => member)); // Filter out null values
+            setMembers(memberDetails.filter((member) => member));
           } else {
             setError("Calendar not found.");
           }
         }
+
         const eventDoc = shared
           ? doc(db, "calendars", calendarId, "events", eventId)
           : doc(
@@ -79,12 +78,11 @@ export default function EventDetailsScreen({ route, navigation }) {
   }, [eventId]);
 
   useEffect(() => {
-    // Only fetch weather when event is set and has a location
     if (event && event.location != null) {
       const fetchWeather = async () => {
         try {
-          const latitude = event.location?.latitude ?? 49.19; // Default latitude
-          const longitude = event.location?.longitude ?? -123.17; // Default longitude
+          const latitude = event.location?.latitude ?? 49.19;
+          const longitude = event.location?.longitude ?? -123.17;
           const response = await fetch(
             `http://api.geonames.org/findNearByWeatherJSON?lat=${latitude}&lng=${longitude}&username=${GEONAMES_USERNAME}`
           );
@@ -102,7 +100,20 @@ export default function EventDetailsScreen({ route, navigation }) {
 
       fetchWeather();
     }
-  }, [event]); // This effect depends on the `event` state
+  }, [event]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: "Event Details",
+      headerTitleStyle: { fontSize: 24, fontWeight: "bold" },
+      headerTitleAlign: "center",
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-left" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   if (error) {
     return (
@@ -138,127 +149,159 @@ export default function EventDetailsScreen({ route, navigation }) {
   );
 
   return (
-    <View style={styles.container}>
+  <SafeAreaView style={styles.container}>
+    <ScrollView>
       <View style={styles.detailsContainer}>
         <Text style={styles.eventTitle}>{event.title}</Text>
-        {shared && (
-          <>
-            <Text style={styles.eventDetail}>Calendar: {calendar.name}</Text>
-            <Text style={styles.sectionTitle}>Members:</Text>
-            <FlatList
-              data={
-                owner
-                  ? [
-                      owner,
-                      ...members.filter(
-                        (member) => member.id !== calendar?.ownerId
-                      ),
-                    ]
-                  : members
-              }
-              keyExtractor={(item) => item.id}
-              renderItem={renderMember}
-              style={styles.list}
-            />
-          </>
-        )}
-        <Text style={styles.eventDetail}>{`Start: ${event.startDate
-          .toDate()
-          .toLocaleString()}`}</Text>
-        <Text style={styles.eventDetail}>{`End: ${event.endDate
-          .toDate()
-          .toLocaleString()}`}</Text>
-        <Text style={styles.eventDetail}>{`Description: ${
-          event.description ? event.description : "No description."
-        }`}</Text>
+        <Text style={styles.eventDescription}>
+          {event.description ? event.description : "No description available."}
+        </Text>
+        <View style={styles.eventDetailBox}>
+          <Text style={styles.eventDetailTitle}>Event Time:</Text>
+          <Text style={styles.eventDetail}>
+            {`Start: ${event.startDate.toDate().toLocaleString()}`}
+          </Text>
+          <Text style={styles.eventDetail}>
+            {`End: ${event.endDate.toDate().toLocaleString()}`}
+          </Text>
+        </View>
+      </View>
 
-        {weather && (
-          <>
-            <Text style={styles.cityText}>
-              Location: {weather.stationName || "N/A"}
-            </Text>
-            <Text style={styles.tempText}>
-              Temperature: {weather.temperature}°C
-            </Text>
-            <Text style={styles.descText}>Humidity: {weather.humidity}%</Text>
-          </>
-        )}
+      {shared && (
+        <View style={styles.sharedDetailsBox}>
+          {/* Calendar Name */}
+          <Text style={styles.sharedCalendarName}>Calendar: {calendar?.name}</Text>
 
+          {/* Members List */}
+          <Text style={styles.sectionTitle}>Members:</Text>
+          <View style={styles.membersContainer}>
+            {owner && (
+              <View style={[styles.memberItem, styles.ownerItem]}>
+                <ProfilePicture userId={owner.id} size={50} />
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>{owner.name} (Owner)</Text>
+                  <Text style={styles.memberUsername}>@{owner.username}</Text>
+                </View>
+              </View>
+            )}
+            {members
+              .filter((member) => member.id !== calendar?.ownerId)
+              .map((member) => (
+                <View key={member.id} style={styles.memberItem}>
+                  <ProfilePicture userId={member.id} size={50} />
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>{member.name}</Text>
+                    <Text style={styles.memberUsername}>@{member.username}</Text>
+                  </View>
+                </View>
+              ))}
+          </View>
+        </View>
+      )}
+
+      <View style={styles.eventLocationBox}>
         {event.location && (
-          <View style={styles.mapContainer}>
-            <Text style={styles.mapTitle}>Event Location:</Text>
-            <MapView
-              style={styles.map}
-              initialRegion={{
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: event.location.latitude,
+              longitude: event.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          >
+            <Marker
+              coordinate={{
                 latitude: event.location.latitude,
                 longitude: event.location.longitude,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
               }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: event.location.latitude,
-                  longitude: event.location.longitude,
-                }}
-              />
-            </MapView>
+            />
+          </MapView>
+        )}
+        {weather && (
+          <View style={styles.weatherDetails}>
+            <Text style={styles.locationText}>
+              Location: {weather.stationName || "Unavailable"}
+            </Text>
+            <Text style={styles.tempText}>
+              Temperature: {weather.temperature || "N/A"}°C
+            </Text>
+            <Text style={styles.descText}>
+              Humidity: {weather.humidity || "N/A"}%
+            </Text>
           </View>
         )}
       </View>
-      <TouchableOpacity style={styles.button} title="Back to Calendar" onPress={() => navigation.goBack()}><Text>Back to Calendar</Text></TouchableOpacity>
-      {/* need to restyle this one lol */}
-    </View>
+    </ScrollView>
+  </SafeAreaView>
+
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#fff",
+  },
+  backButton: {
+    marginLeft: 16,
   },
   detailsContainer: {
     marginBottom: 16,
+    marginHorizontal: 16,
   },
   eventTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 8,
+    color: "#333",
+  },
+  eventDescription: {
+    fontSize: 16,
+    marginBottom: 20,
+    color: "#555",
+  },
+  eventDetailBox: {
+    backgroundColor: "#eee",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  eventDetailTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#333",
   },
   eventDetail: {
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 4,
+    color: "#777",
   },
-  mapContainer: {
-    marginTop: 20,
-    height: "30%",
-  },
-  mapTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  map: {
-    width: "100%",
-    height: "70%",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "red",
-    textAlign: "center",
-  },
-  list: {
+  sharedDetailsBox: {
+    backgroundColor: "#eee",
+    padding: 16,
+    marginHorizontal: 16,
+    borderRadius: 8,
     marginBottom: 16,
   },
+  sharedCalendarName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#555",
+  },
+  membersContainer: {
+    marginTop: 8,
+  },
   memberItem: {
-    flex: 1,
     flexDirection: "row",
-    gap: 6,
     alignItems: "center",
     padding: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#f9f9f9",
     borderRadius: 8,
     marginBottom: 8,
+    gap: 6,
   },
   ownerItem: {
     backgroundColor: "#dfe7fd",
@@ -271,10 +314,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-  button: {
-    backgroundColor: "#eeeeee",
-    padding: 10,
-    borderColor: "111",
-    borderWidth: 1
-  }
+  eventLocationBox: {
+    backgroundColor: "#eee",
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  map: {
+    width: "100%",
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  weatherDetails: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+    marginTop: 8,
+  },
+  locationText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  tempText: {
+    fontSize: 16,
+    color: "#555",
+  },
+  descText: {
+    fontSize: 15,
+    color: "#777",
+  },
 });
+
