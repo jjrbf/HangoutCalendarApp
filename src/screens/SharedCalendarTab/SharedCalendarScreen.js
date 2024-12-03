@@ -210,7 +210,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 12,
-    marginBottom: 22,
+    marginTop: 8,
+    marginBottom: 4,
     marginHorizontal: 16,
   },
   searchIcon: {
