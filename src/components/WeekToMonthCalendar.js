@@ -55,6 +55,8 @@ const getMonthName = (monthNumber) => {
 };
 
 const WeekToMonthCalendar = ({ onDateChange }) => {
+  const isMonthView = useSharedValue(false);
+
   // const today = new Date();
   const today = new Date(2024, 10, 29); // FOR TESTING - Uncomment to test
 
@@ -129,6 +131,8 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
         topOffset.value = withSpring(-(currentWeek - 1) * WEEK_HEIGHT);
       }
     });
+
+    
 
   // Gesture for the drag bar
   const dragBarGesture = Gesture.Pan()
@@ -349,7 +353,7 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
         <GestureDetector gesture={dragBarGesture}>
           <View style={styles.dragBar}>
             <View style={styles.dragBarIndicator} />
-            {/* <View style={styles.dragBarBorder} /> */}
+            <View style={styles.dragBarBorder} />
           </View>
         </GestureDetector>
       </SafeAreaView>

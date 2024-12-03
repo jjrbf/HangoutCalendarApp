@@ -237,23 +237,22 @@ export default function AddEventScreen({ route, navigation }) {
     setStartDatePickerVisible(false);
   };
   
-  const handleEndDateConfirm = (time) => {
-    const updatedEndDate = new Date(endDate);
-    updatedEndDate.setHours(time.getHours());
-    updatedEndDate.setMinutes(time.getMinutes());
-  
+  const handleEndDateConfirm = (date) => {
+    const updatedEndDate = new Date(date);
+    
+    // Ensure time consistency by carrying over the current time from `endDate`
+    updatedEndDate.setHours(endDate.getHours());
+    updatedEndDate.setMinutes(endDate.getMinutes());
+    
     if (updatedEndDate <= startDate) {
-      // Automatically adjust `endDate` to 15 minutes after `startDate`
       updatedEndDate.setTime(startDate.getTime() + 15 * 60 * 1000);
-      Alert.alert(
-        "Invalid End Time",
-        "The end time must be after the start time. Adjusting to 15 minutes later."
-      );
+      Alert.alert("Invalid End Date", "The end date must be after the start date.");
     }
   
-    setEndDate(updatedEndDate); // Update the state
-    setEndDatePickerVisible(false); // Close the picker
+    setEndDate(updatedEndDate);
+    setEndDatePickerVisible(false);
   };
+  
   
   
   

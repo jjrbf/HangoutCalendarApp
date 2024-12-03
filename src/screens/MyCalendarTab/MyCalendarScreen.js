@@ -9,6 +9,8 @@ import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
+  const [calendarHeight, setCalendarHeight] = useState(0);
+
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
@@ -204,17 +206,10 @@ export default function MyCalendarScreen({ route, navigation }) {
     );
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchEvents();
-    }, [userId, deviceCalendarEvents])
-  );
-
-  
-
   return (
     <SafeAreaView style={styles.container}>
-      <WeekToMonthCalendar onDateChange={handleDateChange} />
+        <WeekToMonthCalendar onDateChange={handleDateChange} />
+
       <View style={styles.eventsContainer}>
         <FlatList
           data={filteredEvents}
@@ -281,6 +276,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // padding: 16,
+    marginTop: 6,
     backgroundColor: '#fff', 
   },
   eventsContainer: {
@@ -292,13 +288,24 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     backgroundColor: "#f9f9f9",
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   eventTitle: {
     fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 5,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
   },
+  noEventsText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 16,
+  },
+
 });
