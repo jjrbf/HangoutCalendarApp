@@ -83,7 +83,7 @@ export default function SignUpScreen({ navigation }) {
       });
 
       Alert.alert("Sign Up Success!", "Your account has been created.");
-      navigation.navigate("SignIn");
+      // navigation.navigate("SignIn");
     } catch (error) {
       console.error("Sign Up Error:", error);
       Alert.alert("Sign Up Failed", error.message);

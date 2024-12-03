@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
@@ -32,6 +33,7 @@ export default function MyCalendarScreen({ route, navigation }) {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
   const [deviceCalendarEvents, setDeviceCalendarEvents] = useState([]);
+  const [loading, setLoading] = useState(false); // Loading state
   const userId = auth.currentUser.uid;
 
   // Fetch device calendar events
@@ -99,6 +101,7 @@ export default function MyCalendarScreen({ route, navigation }) {
 
   // Fetch personal and shared events
   const fetchEvents = async () => {
+    setLoading(true); // Start loading
     try {
       // User's personal calendar
       const personalCalendarId = `personal_calendar_${userId}`;
@@ -173,6 +176,8 @@ export default function MyCalendarScreen({ route, navigation }) {
     } catch (error) {
       console.error("Error fetching events: ", error);
       Alert.alert("Error", "Could not fetch events.");
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
@@ -246,7 +251,9 @@ export default function MyCalendarScreen({ route, navigation }) {
           isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek
         }
       >
-        {filteredEvents.length > 0 ? ( // Check for empty array
+        {loading ? ( // Show loading indicator
+          <ActivityIndicator size="large" color="#007bff" />
+        ) : filteredEvents.length > 0 ? ( // Check for empty array
           <FlatList
             data={filteredEvents}
             keyExtractor={(item) => `${item.calendarId}_${item.id}`}

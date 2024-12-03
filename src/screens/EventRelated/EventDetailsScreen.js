@@ -247,6 +247,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyItems: "center",
     alignItems: "center",
+    fontWeight: "bold",
+    marginTop: 16
   },
   backButton: {
     marginLeft: 16,

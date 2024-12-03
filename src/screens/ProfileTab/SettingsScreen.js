@@ -173,7 +173,7 @@ export default function SettingsScreen({ navigation }) {
     try {
       await signOut(auth);
       Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.navigate("SignIn");
+      // navigation.navigate("SignIn");
     } catch (error) {
       console.error("Logout Error:", error);
       Alert.alert("Logout Failed", error.message);
