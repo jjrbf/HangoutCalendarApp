@@ -341,12 +341,12 @@ export default function Timetable({
             <View key={dayIndex} style={styles.dayColumn}>
               {day.map((cell, hourIndex) => {
                 const backgroundColor = passedTimes.includes(cell.time)
-                  ? "gray"
+                  ? "#565656"
                   : cell.overlaps > 0
                   ? `rgba(255, 0, 0, ${Math.min(cell.overlaps / 3, 1)})`
                   : selectedTime.includes(cell.time)
                   ? "orange"
-                  : "rgba(0, 255, 0, 0.3)";
+                  : "#dfe7fd";
 
                 return (
                   <TouchableOpacity
@@ -396,12 +396,12 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 10,
-    backgroundColor: "#007bff",
+    backgroundColor: "#dfe7fd",
     borderRadius: 5,
   },
   buttonText: {
     fontSize: 10,
-    color: "white",
+    color: "#333",
     fontWeight: "bold",
   },
   timeAxisHeader: {

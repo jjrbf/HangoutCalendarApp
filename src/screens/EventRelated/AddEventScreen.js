@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, StyleSheet, Alert, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../../firebaseConfig";
 import { Timetable } from "../../components";
@@ -47,20 +55,22 @@ export default function AddEventScreen({ route, navigation }) {
         const draft = await AsyncStorage.getItem(draftKey);
         if (draft) {
           const parsedDraft = JSON.parse(draft);
-    
+
           const loadedStartDate = new Date(parsedDraft.startDate || new Date());
           let loadedEndDate = new Date(parsedDraft.endDate || new Date());
-    
+
           // Ensure the `endDate` is at least 15 minutes after the `startDate`
           if (loadedEndDate <= loadedStartDate) {
-            loadedEndDate = new Date(loadedStartDate.getTime() + 15 * 60 * 1000);
+            loadedEndDate = new Date(
+              loadedStartDate.getTime() + 15 * 60 * 1000
+            );
           }
-    
+
           setEventTitle(parsedDraft.eventTitle || "");
           setEventDescription(parsedDraft.eventDescription || "");
           setStartDate(loadedStartDate);
           setEndDate(loadedEndDate);
-    
+
           setOriginalDraft({
             eventTitle: parsedDraft.eventTitle || "",
             eventDescription: parsedDraft.eventDescription || "",
@@ -72,11 +82,9 @@ export default function AddEventScreen({ route, navigation }) {
         console.error("Error loading draft: ", error);
       }
     };
-    
-  
+
     loadDraft();
   }, []);
-  
 
   // Save draft when any field changes
   useEffect(() => {
@@ -124,7 +132,6 @@ export default function AddEventScreen({ route, navigation }) {
   }, [route.params?.selectedLocation]); // Re-run when selectedLocation changes
 
   const handleAddEvent = async () => {
-
     const setEvent = async () => {
       const newEvent = {
         title: eventTitle,
@@ -144,7 +151,7 @@ export default function AddEventScreen({ route, navigation }) {
         setEvents((prevEvents) => [...prevEvents, newEvent]);
         clearDraft();
         Alert.alert("Success", "Event added successfully!");
-  
+
         // Reset fields after adding the event
         setEventTitle("");
         setEventDescription("");
@@ -230,64 +237,61 @@ export default function AddEventScreen({ route, navigation }) {
     const updatedStartDate = new Date(date);
     updatedStartDate.setHours(startDate.getHours());
     updatedStartDate.setMinutes(startDate.getMinutes());
-  
+
     if (validateEventTiming(updatedStartDate, endDate)) {
       setStartDate(updatedStartDate);
     }
     setStartDatePickerVisible(false);
   };
-  
+
   const handleEndDateConfirm = (date) => {
     const updatedEndDate = new Date(date);
-    
+
     // Ensure time consistency by carrying over the current time from `endDate`
     updatedEndDate.setHours(endDate.getHours());
     updatedEndDate.setMinutes(endDate.getMinutes());
-    
+
     if (updatedEndDate <= startDate) {
       updatedEndDate.setTime(startDate.getTime() + 15 * 60 * 1000);
-      Alert.alert("Invalid End Date", "The end date must be after the start date.");
+      Alert.alert(
+        "Invalid End Date",
+        "The end date must be after the start date."
+      );
     }
-  
+
     setEndDate(updatedEndDate);
     setEndDatePickerVisible(false);
   };
-  
-  
-  
-  
+
   const handleStartTimeConfirm = (time) => {
     const updatedStartDate = new Date(startDate);
     updatedStartDate.setHours(time.getHours());
     updatedStartDate.setMinutes(time.getMinutes());
-  
+
     const updatedEndDate = new Date(endDate);
-  
+
     if (updatedEndDate <= updatedStartDate) {
       updatedEndDate.setTime(updatedStartDate.getTime() + 15 * 60 * 1000); // Add 15 minutes
       setEndDate(updatedEndDate);
     }
-  
+
     setStartDate(updatedStartDate);
     setStartTimePickerVisible(false);
   };
-  
-  
+
   const handleEndTimeConfirm = (time) => {
     const updatedEndDate = new Date(endDate);
     updatedEndDate.setHours(time.getHours());
     updatedEndDate.setMinutes(time.getMinutes());
-  
+
     if (updatedEndDate <= startDate) {
       Alert.alert("Invalid Time", "The end time must be after the start time.");
     } else {
       setEndDate(updatedEndDate);
     }
-  
+
     setEndTimePickerVisible(false);
   };
-  
-
 
   const validateEventTiming = (startDate, endDate) => {
     if (endDate <= startDate) {
@@ -297,13 +301,10 @@ export default function AddEventScreen({ route, navigation }) {
       });
       return false;
     }
-  
+
     setInvalidMessage(null); // Clear any previous error
     return true;
   };
-  
-  
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -315,148 +316,156 @@ export default function AddEventScreen({ route, navigation }) {
           Add
         </Text>
       </View>
-  
-      <TouchableOpacity onPress={() => setShowTimetable((prev) => !prev)}>
-        <Text style={styles.toggleText}>
-          {showTimetable ? "Hide available time slots" : "Show available time slots"}
-        </Text>
-      </TouchableOpacity>
-  
-      {showTimetable && (
-        <Timetable
-          calendarId={calendarId}
-          onTimeChange={handleTimeChange}
-          startDate={startDate}
-          endDate={endDate}
-          setInvalidMessage={setInvalidMessage}
-        />
-      )}
-  
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Event Title"
-          value={eventTitle}
-          onChangeText={setEventTitle}
-          placeholderTextColor="#333"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Event Description"
-          value={eventDescription}
-          onChangeText={setEventDescription}
-          placeholderTextColor="#333"
-        />
-  
-        <View style={styles.dateTimeContainer}>
-          {/* Start Date and Time */}
-          <View style={styles.row}>
-            <Text style={styles.label}>Start:</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setStartDatePickerVisible(true)}
-            >
-              <Text style={styles.dateButtonText}>
-                {startDate.toLocaleDateString()}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setStartTimePickerVisible(true)}
-            >
-              <Text style={styles.dateButtonText}>
-                {startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-            </TouchableOpacity>
-          </View>
-  
-          {/* End Date and Time */}
-          <View style={styles.row}>
-            <Text style={styles.label}>End:</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setEndDatePickerVisible(true)}
-            >
-              <Text style={styles.dateButtonText}>
-                {endDate.toLocaleDateString()}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setEndTimePickerVisible(true)}
-            >
-              <Text style={styles.dateButtonText}>
-                {endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-  
-        {/* Location Section */}
-        <View style={styles.locationContainer}>
-          <TouchableOpacity
-            style={styles.locationBox}
-            onPress={() =>
-              navigation.navigate("SetLocation", { calendarId, shared })
-            }
-          >
-            <View style={styles.locationContent}>
-              <Text style={styles.locationLabel}>Add Location:</Text>
-              <Text
-                style={styles.locationText}
-                numberOfLines={1}
-                ellipsizeMode="tail"
+
+      <ScrollView>
+
+        <View style={styles.formContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Event Title"
+            value={eventTitle}
+            onChangeText={setEventTitle}
+            placeholderTextColor="#333"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Event Description"
+            value={eventDescription}
+            onChangeText={setEventDescription}
+            placeholderTextColor="#333"
+          />
+
+          <View style={styles.dateTimeContainer}>
+            {/* Start Date and Time */}
+            <View style={styles.row}>
+              <Text style={styles.label}>Start:</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setStartDatePickerVisible(true)}
               >
-                {location
-                  ? `Latitude ${location.latitude}, Longitude ${location.longitude}`
-                  : `Location not set`}
-              </Text>
+                <Text style={styles.dateButtonText}>
+                  {startDate.toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setStartTimePickerVisible(true)}
+              >
+                <Text style={styles.dateButtonText}>
+                  {startDate.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+
+            {/* End Date and Time */}
+            <View style={styles.row}>
+              <Text style={styles.label}>End:</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setEndDatePickerVisible(true)}
+              >
+                <Text style={styles.dateButtonText}>
+                  {endDate.toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setEndTimePickerVisible(true)}
+              >
+                <Text style={styles.dateButtonText}>
+                  {endDate.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Location Section */}
+          <View style={styles.locationContainer}>
+            <TouchableOpacity
+              style={styles.locationBox}
+              onPress={() =>
+                navigation.navigate("SetLocation", { calendarId, shared })
+              }
+            >
+              <View style={styles.locationContent}>
+                <Text style={styles.locationLabel}>Add Location:</Text>
+                <Text
+                  style={styles.locationText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {location
+                    ? `Latitude ${location.latitude}, Longitude ${location.longitude}`
+                    : `Location not set`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-  
-      {/* Start Date Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isStartDatePickerVisible}
-        mode="date"
-        onConfirm={handleStartDateConfirm}
-        onCancel={() => setStartDatePickerVisible(false)}
-      />
-  
-      {/* Start Time Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isStartTimePickerVisible}
-        mode="time"
-        onConfirm={handleStartTimeConfirm}
-        onCancel={() => setStartTimePickerVisible(false)}
-      />
-  
-      {/* End Date Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isEndDatePickerVisible}
-        mode="date"
-        onConfirm={handleEndDateConfirm}
-        onCancel={() => setEndDatePickerVisible(false)}
-      />
-  
-      {/* End Time Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isEndTimePickerVisible}
-        mode="time"
-        onConfirm={handleEndTimeConfirm}
-        onCancel={() => setEndTimePickerVisible(false)}
-      />
+
+        {/* Start Date Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isStartDatePickerVisible}
+          mode="date"
+          onConfirm={handleStartDateConfirm}
+          onCancel={() => setStartDatePickerVisible(false)}
+        />
+
+        {/* Start Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isStartTimePickerVisible}
+          mode="time"
+          onConfirm={handleStartTimeConfirm}
+          onCancel={() => setStartTimePickerVisible(false)}
+        />
+
+        {/* End Date Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isEndDatePickerVisible}
+          mode="date"
+          onConfirm={handleEndDateConfirm}
+          onCancel={() => setEndDatePickerVisible(false)}
+        />
+
+        {/* End Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isEndTimePickerVisible}
+          mode="time"
+          onConfirm={handleEndTimeConfirm}
+          onCancel={() => setEndTimePickerVisible(false)}
+        />
+
+        <TouchableOpacity onPress={() => setShowTimetable((prev) => !prev)}>
+          <Text style={styles.toggleText}>
+            {showTimetable
+              ? "Hide available time slots"
+              : "Show available time slots"}
+          </Text>
+        </TouchableOpacity>
+        {showTimetable && (
+          <Timetable
+            calendarId={calendarId}
+            onTimeChange={handleTimeChange}
+            startDate={startDate}
+            endDate={endDate}
+            setInvalidMessage={setInvalidMessage}
+          />
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
-  
-  
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     // padding: 16,
   },
   header: {
@@ -483,7 +492,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     marginTop: 16,
-
   },
   input: {
     width: "100%",
@@ -543,7 +551,7 @@ const styles = StyleSheet.create({
   locationContainer: {
     marginVertical: 10,
   },
-  
+
   locationBox: {
     backgroundColor: "#e6e6e6", // Grey background
     padding: 15, // Padding for the grey box
@@ -551,24 +559,23 @@ const styles = StyleSheet.create({
     flexDirection: "row", // Align items in a row
     alignItems: "center", // Center vertically
   },
-  
+
   locationContent: {
     flexDirection: "row", // Row layout for label and text
     alignItems: "center", // Align text and label vertically
     flex: 1, // Ensure content stretches as needed
   },
-  
+
   locationLabel: {
     fontSize: 16,
     fontWeight: "bold",
     marginRight: 8, // Spacing between the label and the text
   },
-  
+
   locationText: {
     fontSize: 14,
     color: "#000",
     flex: 1, // Allow the text to take available space
     overflow: "hidden", // Ensure proper truncation behavior
   },
-  
 });

@@ -114,13 +114,15 @@ export default function SetLocationScreen({ route, navigation }) {
   if (errorMsg) {
     locationText = errorMsg;
   } else if (selectedLocation) {
-    locationText = `Selected location: latitude: ${selectedLocation.latitude}, longitude: ${selectedLocation.longitude}`;
+    locationText = `Selected location:
+    latitude: ${selectedLocation.latitude}, longitude: ${selectedLocation.longitude}`;
   } else if (location) {
-    locationText = `Current location: latitude: ${location.coords.latitude}, longitude: ${location.coords.longitude}`;
+    locationText = `Current location:
+    latitude: ${location.coords.latitude}, longitude: ${location.coords.longitude}`;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.paragraph}>{locationText}</Text>
       <View style={styles.searchRow}>
         <TextInput
@@ -155,7 +157,7 @@ export default function SetLocationScreen({ route, navigation }) {
       >
         <Text style={styles.setLocationButtonText}>Set Location</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
