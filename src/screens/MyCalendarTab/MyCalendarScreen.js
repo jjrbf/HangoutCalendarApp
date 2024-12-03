@@ -1,15 +1,32 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, FlatList, StyleSheet, Alert, Linking, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  FlatList,
+  StyleSheet,
+  Alert,
+  Linking,
+  Platform,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
-import { collection, getDocs, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
-  const [calendarHeight, setCalendarHeight] = useState(0);
+  const [isMonthView, setIsMonthView] = useState(false);
 
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -172,6 +189,10 @@ export default function MyCalendarScreen({ route, navigation }) {
     filterEvents(events, date);
   };
 
+  const handleViewChange = (viewState) => {
+    setIsMonthView(viewState);
+  };
+
   const handleDeleteEvent = async (eventId, calendarId, shared) => {
     Alert.alert(
       "Delete Event",
@@ -206,11 +227,21 @@ export default function MyCalendarScreen({ route, navigation }) {
     );
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchEvents();
+    }, [userId, deviceCalendarEvents])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-        <WeekToMonthCalendar onDateChange={handleDateChange} />
+      <WeekToMonthCalendar
+        onDateChange={handleDateChange}
+        onViewChange={handleViewChange}
+        style={{ flex: 1 }}
+      />
 
-      <View style={styles.eventsContainer}>
+      <View style={isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek}>
         <FlatList
           data={filteredEvents}
           keyExtractor={(item) => `${item.calendarId}_${item.id}`}
@@ -279,8 +310,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     backgroundColor: '#fff', 
   },
-  eventsContainer: {
+  eventsContainerMonth: {
     flex: 1,
+    marginBottom: 16,
+  },
+  eventsContainerWeek: {
+    flex: 3.5,
     marginBottom: 16,
   },
   eventItem: {
@@ -307,5 +342,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 16,
   },
-
 });

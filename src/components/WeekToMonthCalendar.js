@@ -6,7 +6,7 @@ import {
   GestureHandlerRootView, Gesture, GestureDetector,
 } from 'react-native-gesture-handler';
 import Animated, { 
-  useSharedValue, useAnimatedStyle, withSpring,
+  useSharedValue, useAnimatedStyle, withSpring, useDerivedValue, useAnimatedReaction, runOnJS
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { auth } from "../firebaseConfig";
@@ -54,11 +54,10 @@ const getMonthName = (monthNumber) => {
   return monthNames[monthNumber - 1];
 };
 
-const WeekToMonthCalendar = ({ onDateChange }) => {
-  const isMonthView = useSharedValue(false);
+const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
 
-  // const today = new Date();
-  const today = new Date(2024, 10, 29); // FOR TESTING - Uncomment to test
+  const today = new Date();
+  // const today = new Date(2024, 10, 29); // FOR TESTING - Uncomment to test
 
   const navigation = useNavigation();
 
@@ -80,6 +79,27 @@ const WeekToMonthCalendar = ({ onDateChange }) => {
 
   const translateY = useSharedValue(WEEK_HEIGHT);
   const topOffset = useSharedValue(-(currentWeek - 1) * WEEK_HEIGHT);
+  const [isMonthView, setIsMonthView] = useState(false);
+
+  const isMonthViewDerived = useDerivedValue(() => {
+    const value = translateY.value >= MONTH_HEIGHT - WEEK_HEIGHT / 2;
+    // console.log("Derived Value:", value); // Log changes to derived value
+    return value;
+  });
+
+  useAnimatedReaction(
+    () => isMonthViewDerived.value, // Input (what you want to react to)
+    (result, previousResult) => {
+      if (result !== previousResult) {
+        runOnJS(setIsMonthView)(result);
+        runOnJS(onViewChange)(result);
+        // console.log("Updated Value in useAnimatedReaction:", result);
+      }
+    },
+    [] // Dependencies
+  );
+
+
 
   useEffect(() => {
     // Update total rows dynamically based on the month
