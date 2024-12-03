@@ -107,8 +107,7 @@ export default function CalendarScreen({ route, navigation }) {
       ),
       headerTitleAlign: "center",
     });
-  }, [navigation, calendar, showMembers]);  
-  
+  }, [navigation, calendar, showMembers]);
 
   const renderEvent = ({ item }) => (
     <TouchableOpacity
@@ -122,11 +121,14 @@ export default function CalendarScreen({ route, navigation }) {
       }
     >
       <Text style={styles.eventTitle}>{item.title}</Text>
-      <Text>{`Start: ${item.startDate.toDate().toLocaleString()}`}</Text>
-      <Text>{`End: ${item.endDate.toDate().toLocaleString()}`}</Text>
+      <Text
+        style={styles.timeText}
+      >{`${item.startDate.toDate().toLocaleString()} - ${item.endDate.toDate().toLocaleString()}`}</Text>
+      {item.description && (
+        <Text style={styles.descriptionText}>{item.description}</Text>
+      )}
     </TouchableOpacity>
   );
-  
 
   const renderMember = ({ item }) => (
     <View
@@ -154,7 +156,9 @@ export default function CalendarScreen({ route, navigation }) {
             owner
               ? [
                   owner,
-                  ...members.filter((member) => member.id !== calendar?.ownerId),
+                  ...members.filter(
+                    (member) => member.id !== calendar?.ownerId
+                  ),
                 ]
               : members
           }
@@ -171,14 +175,6 @@ export default function CalendarScreen({ route, navigation }) {
     <View style={styles.container}>
       {calendar && (
         <>
-          <TouchableOpacity
-            style={styles.addEventButton}
-            onPress={() =>
-              navigation.navigate("AddEvent", { calendarId: calendarId, shared: true })
-            }
-          >
-            <Text style={styles.addEventText}>Add Group Event</Text>
-          </TouchableOpacity>
           <Text style={styles.sectionTitle}>Group Events:</Text>
           {events.length > 0 ? (
             <FlatList
@@ -190,6 +186,17 @@ export default function CalendarScreen({ route, navigation }) {
           ) : (
             <Text style={styles.noEventsText}>No events added yet.</Text>
           )}
+          <TouchableOpacity
+            style={styles.addEventButton}
+            onPress={() =>
+              navigation.navigate("AddEvent", {
+                calendarId: calendarId,
+                shared: true,
+              })
+            }
+          >
+            <Text style={styles.addEventText}>Add Group Event</Text>
+          </TouchableOpacity>
         </>
       )}
     </View>
@@ -220,7 +227,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 6,
   },
   addEventText: {
     color: "#fff",
@@ -246,12 +253,27 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 5,
+  },
+  timeText: {
+    fontSize: 14,
+  },
+  descriptionText: {
+    fontSize: 14,
+    marginTop: 6,
+    padding: 8,
+    color: "d3d3d3",
+    fontStyle: "italic",
+    borderColor: "#d3d3d3",
+    borderWidth: 1,
+    borderRadius: 8,
   },
   noEventsText: {
     fontSize: 16,
     color: "#999",
     textAlign: "center",
     marginTop: 16,
+    marginBottom: 16,
   },
   memberItem: {
     flexDirection: "row",
