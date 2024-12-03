@@ -1,24 +1,21 @@
 import React, { useState, useCallback } from "react";
 import {
   Text,
-  Button,
   Alert,
   StyleSheet,
-  FlatList,
   View,
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "../../firebaseConfig";
-import { signOut } from "firebase/auth";
 import { ProfilePicture } from "../../components";
-import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function ProfileScreen({ navigation }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [friends, setFriends] = useState([]);
   const userId = auth.currentUser.uid;
 
   const fetchUserData = async () => {
@@ -26,25 +23,8 @@ export default function ProfileScreen({ navigation }) {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        setName(userData.name);
-        setUsername(userData.username);
-
-        // Fetch friends details
-        const friendUids = userData.friends || [];
-        const friendPromises = friendUids.map((friendUid) =>
-          getDoc(doc(db, "users", friendUid))
-        );
-        const friendDocs = await Promise.all(friendPromises);
-
-        const friendList = friendDocs
-          .filter((doc) => doc.exists())
-          .map((doc) => ({
-            id: doc.id,
-            name: doc.data().name,
-            username: doc.data().username,
-          }));
-
-        setFriends(friendList);
+        setName(userData.name || "Unknown");
+        setUsername(userData.username || "unknown");
       } else {
         console.error("No such user document!");
       }
@@ -53,84 +33,48 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  // Refresh data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
     }, [userId])
   );
 
-  const handleRemoveFriend = async (friendId) => {
-    Alert.alert(
-      "Remove Friend",
-      "Are you sure you want to remove this friend?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await updateDoc(doc(db, "users", userId), {
-                friends: arrayRemove(friendId),
-              });
-              setFriends((prevFriends) =>
-                prevFriends.filter((friend) => friend.id !== friendId)
-              );
-              Alert.alert("Success", "Friend removed successfully.");
-            } catch (error) {
-              console.error("Error removing friend:", error);
-              Alert.alert("Error", "Could not remove friend.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>My Profile</Text>
-      <ProfilePicture userId={userId} size={100} />
-      <Text style={styles.userName}>{name}</Text>
-      <Text style={styles.userName}>@{username}</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Account</Text>
+        <TouchableOpacity
+          style={styles.hamburgerIcon}
+          onPress={() => navigation.navigate("Settings")}
+        >
+          <MaterialCommunityIcons name="menu" size={30} color="black" />
+        </TouchableOpacity>
+      </View>
 
-      <Text style={styles.subTitle}>Friends:</Text>
-      {friends.length > 0 ? (
-        <FlatList
-          data={friends}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.friendItem}>
-              <ProfilePicture userId={item.id} size={30} />
-              <View style={styles.friendInfo}>
-                <Text style={styles.friendName}>{item.name}</Text>
-                <Text style={styles.friendUsername}>@{item.username}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => handleRemoveFriend(item.id)}
-              >
-                <Text style={styles.removeButtonText}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      ) : (
-        <Text style={styles.noFriendsText}>No friends added yet.</Text>
-      )}
+      {/* Profile Info */}
+      <View style={styles.profileInfo}>
+        <ProfilePicture userId={userId} size={100} />
+        <View style={styles.profileContainer}>
+          <Text style={styles.userName}>{name}</Text>
+          <Text style={styles.userNickname}>@{username}</Text>
+          {/* Edit Profile Link */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("EditProfile")}
+          >
+            <Text style={styles.editProfileLink}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-      <Button
-        title="Add Friends"
+      {/* Friends Button */}
+      <TouchableOpacity
+        style={styles.friendsButton}
         onPress={() => navigation.navigate("AddFriends")}
-      />
-      <Button
-        title="Settings"
-        onPress={() => navigation.navigate("Settings")}
-      />
+      >
+        <Text style={styles.friendsText}>Friends</Text>
+        <MaterialCommunityIcons name="chevron-right" size={28} color="#000" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -139,55 +83,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    alignItems: "center",
+    backgroundColor: "white",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  subTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 10,
-  },
-  friendItem: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
     width: "100%",
+    marginBottom: 18,
   },
-  friendInfo: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  friendName: {
-    fontSize: 16,
+  title: {
+    fontSize: 28,
     fontWeight: "bold",
   },
-  friendUsername: {
-    fontSize: 14,
-    color: "#555",
+  hamburgerIcon: {
+    padding: 2,
   },
-  removeButton: {
-    backgroundColor: "red",
-    padding: 8,
-    borderRadius: 5,
+  profileInfo: {
+    alignItems: "center",
+    marginBottom: 20,
   },
-  removeButtonText: {
-    color: "white",
+  profileContainer: {
+    alignItems: "center",
+  },
+  userName: {
+    marginTop: 2,
+    fontSize: 24,
     fontWeight: "bold",
   },
-  noFriendsText: {
-    marginVertical: 10,
+  userNickname: {
     fontSize: 16,
     color: "#555",
+  },
+  editProfileLink: {
+    color: "#007BFF", // Blue text, matching button color
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 12, // Slight space beneath username
+  },
+  friendsButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#e6e6e6",
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  friendsText: {
+    color: "#222",
+    fontSize: 20,
+    fontWeight: "600",
   },
 });

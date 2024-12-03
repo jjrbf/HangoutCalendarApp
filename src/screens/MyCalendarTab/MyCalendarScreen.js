@@ -1,14 +1,33 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, Button, FlatList, StyleSheet, Alert, Linking, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Alert,
+  Linking,
+  Platform,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Calendar from "expo-calendar"; // Add Expo Calendar
 import { db, auth } from "../../firebaseConfig";
-import { collection, getDocs, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
-import { CalendarSwitcher } from "../../components";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
+  const [isMonthView, setIsMonthView] = useState(false);
+
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
@@ -170,6 +189,10 @@ export default function MyCalendarScreen({ route, navigation }) {
     filterEvents(events, date);
   };
 
+  const handleViewChange = (viewState) => {
+    setIsMonthView(viewState);
+  };
+
   const handleDeleteEvent = async (eventId, calendarId, shared) => {
     Alert.alert(
       "Delete Event",
@@ -212,72 +235,88 @@ export default function MyCalendarScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <CalendarSwitcher onDateChange={handleDateChange} />
-      <Button
-        title="Add Event"
-        onPress={() =>
-          navigation.navigate("AddEvent", {
-            calendarId: `personal_calendar_${userId}`,
-          })
-        }
+      <WeekToMonthCalendar
+        onDateChange={handleDateChange}
+        onViewChange={handleViewChange}
+        style={{ flex: 1 }}
       />
-      <View style={styles.eventsContainer}>
-        <FlatList
-          data={filteredEvents}
-          keyExtractor={(item) => `${item.calendarId}_${item.id}`}
-          renderItem={({ item }) => (
-            <View style={styles.eventItem}>
-              <Text style={styles.eventTitle}>
-                {item.title}{" "}
-                {item.shared
-                  ? "(Shared)"
-                  : item.deviceEvent
-                  ? "(Device)"
-                  : "(Personal)"}
-              </Text>
-              <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
-              <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
-              <Text>{item.description}</Text>
-              <View style={styles.buttonContainer}>
-                <Button
-                  title="See More"
-                  onPress={() => {
-                    if (item.deviceEvent) {
-                      // Redirect to native calendar for device events
-                      if (Platform.OS === "ios") {
-                        Linking.openURL(
-                          `calshow:${item.startDate.getTime() / 1000}`
-                        ); // Open iOS calendar event
-                      } else if (Platform.OS === "android") {
-                        Linking.openURL("content://com.android.calendar/time/"); // Open Android calendar app
-                      } else {
-                        Alert.alert(
-                          "Unsupported Platform",
-                          "Cannot open the calendar on this platform."
-                        );
-                      }
-                    } else {
-                      // Navigate to your EventDetails screen for non-device events
-                      navigation.navigate("EventDetails", {
-                        eventId: item.id,
-                        calendarId: item.calendarId,
-                        shared: item.shared,
-                      });
-                    }
-                  }}
-                />
-                {!item.deviceEvent && (
-                  <Button
-                    title="Delete"
-                    onPress={() =>
-                      handleDeleteEvent(item.id, item.calendarId, item.shared)
-                    }
-                  />
+
+      <View
+        style={
+          isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek
+        }
+      >
+        {filteredEvents.length > 0 ? ( // Check for empty array
+          <FlatList
+            data={filteredEvents}
+            keyExtractor={(item) => `${item.calendarId}_${item.id}`}
+            renderItem={({ item }) => (
+              <View style={styles.eventItem}>
+                <Text style={styles.eventTitle}>
+                  {item.title}{" "}
+                  {item.shared
+                    ? "(Shared)"
+                    : item.deviceEvent
+                    ? "(Device)"
+                    : "(Personal)"}
+                </Text>
+                <Text
+                  style={styles.timeText}
+                >{`${item.startDate.toLocaleString()} - ${item.endDate.toLocaleString()}`}</Text>
+                {item.description && (
+                  <Text style={styles.descriptionText}>{item.description}</Text>
                 )}
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => {
+                      if (item.deviceEvent) {
+                        // Redirect to native calendar for device events
+                        if (Platform.OS === "ios") {
+                          Linking.openURL(
+                            `calshow:${item.startDate.getTime() / 1000}`
+                          ); // Open iOS calendar event
+                        } else if (Platform.OS === "android") {
+                          Linking.openURL(
+                            "content://com.android.calendar/time/"
+                          ); // Open Android calendar app
+                        } else {
+                          Alert.alert(
+                            "Unsupported Platform",
+                            "Cannot open the calendar on this platform."
+                          );
+                        }
+                      } else {
+                        // Navigate to your EventDetails screen for non-device events
+                        navigation.navigate("EventDetails", {
+                          eventId: item.id,
+                          calendarId: item.calendarId,
+                          shared: item.shared,
+                        });
+                      }
+                    }}
+                  >
+                    <Text style={styles.secondaryButtonText}>See More</Text>
+                  </TouchableOpacity>
+                  {!item.deviceEvent && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() =>
+                        handleDeleteEvent(item.id, item.calendarId, item.shared)
+                      }
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
-          )}
-        />
+            )}
+          />
+        ) : (
+          <Text style={styles.noEventsText}>
+            No events found. Create an event!
+          </Text> // Show this message when there are no events
+        )}
       </View>
     </SafeAreaView>
   );
@@ -286,24 +325,79 @@ export default function MyCalendarScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#fff",
   },
-  eventsContainer: {
+  eventsContainerMonth: {
     flex: 1,
+    padding: 16,
     marginBottom: 16,
+    backgroundColor: "#fff",
+  },
+  eventsContainerWeek: {
+    flex: 3.5,
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: "#fff",
   },
   eventItem: {
     padding: 10,
     marginVertical: 5,
     backgroundColor: "#f9f9f9",
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   eventTitle: {
     fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  timeText: {
+    fontSize: 14,
+  },
+  descriptionText: {
+    fontSize: 14,
+    marginTop: 6,
+    padding: 8,
+    color: "d3d3d3",
+    fontStyle: "italic",
+    borderColor: "#d3d3d3",
+    borderWidth: 1,
+    borderRadius: 8,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 16,
+  },
+  secondaryButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#ffeaea",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    color: "#8c0b0b",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
