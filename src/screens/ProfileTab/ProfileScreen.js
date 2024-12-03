@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "../../firebaseConfig";
-import { signOut } from "firebase/auth";
 import { ProfilePicture } from "../../components";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { doc, getDoc } from "firebase/firestore";
@@ -31,17 +30,6 @@ export default function ProfileScreen({ navigation }) {
       }
     } catch (error) {
       console.error("Error fetching user data: ", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.navigate("SignIn");
-    } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Logout Failed", error.message);
     }
   };
 
@@ -86,11 +74,6 @@ export default function ProfileScreen({ navigation }) {
       >
         <Text style={styles.friendsText}>Friends</Text>
         <MaterialCommunityIcons name="chevron-right" size={28} color="#000" />
-      </TouchableOpacity>
-
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -151,20 +134,5 @@ const styles = StyleSheet.create({
     color: "#222",
     fontSize: 20,
     fontWeight: "600",
-  },
-  logoutButton: {
-    backgroundColor: "#FFCCCC",
-    padding: 10,
-    borderRadius: 18,
-    alignItems: "center",
-    alignSelf: "center", // Centers the button
-    marginTop: "auto", // Pushes the button to the bottom
-    marginBottom: 12,
-    width: 120, // Restricts the button width
-  },
-  logoutButtonText: {
-    color: "red", // Red text
-    fontSize: 16,
-    fontWeight: "bold",
   },
 });
