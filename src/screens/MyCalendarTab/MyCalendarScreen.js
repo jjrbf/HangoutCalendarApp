@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
-  Button,
+  TouchableOpacity,
   FlatList,
   StyleSheet,
   Alert,
@@ -241,7 +241,11 @@ export default function MyCalendarScreen({ route, navigation }) {
         style={{ flex: 1 }}
       />
 
-      <View style={isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek}>
+      <View
+        style={
+          isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek
+        }
+      >
         <FlatList
           data={filteredEvents}
           keyExtractor={(item) => `${item.calendarId}_${item.id}`}
@@ -255,12 +259,11 @@ export default function MyCalendarScreen({ route, navigation }) {
                   ? "(Device)"
                   : "(Personal)"}
               </Text>
-              <Text>{`Start: ${item.startDate.toLocaleString()}`}</Text>
-              <Text>{`End: ${item.endDate.toLocaleString()}`}</Text>
-              <Text>{item.description}</Text>
+              <Text style={styles.timeText}>{`${item.startDate.toLocaleString()} - ${item.endDate.toLocaleString()}`}</Text>
+              { item.description && <Text style={styles.descriptionText}>{item.description}</Text>}
               <View style={styles.buttonContainer}>
-                <Button
-                  title="See More"
+                <TouchableOpacity
+                  style={styles.secondaryButton}
                   onPress={() => {
                     if (item.deviceEvent) {
                       // Redirect to native calendar for device events
@@ -285,14 +288,18 @@ export default function MyCalendarScreen({ route, navigation }) {
                       });
                     }
                   }}
-                />
+                >
+                  <Text style={styles.secondaryButtonText}>See More</Text>
+                </TouchableOpacity>
                 {!item.deviceEvent && (
-                  <Button
-                    title="Delete"
+                  <TouchableOpacity
+                    style={styles.deleteButton}
                     onPress={() =>
                       handleDeleteEvent(item.id, item.calendarId, item.shared)
                     }
-                  />
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -306,16 +313,17 @@ export default function MyCalendarScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // padding: 16,
     marginTop: 6,
-    backgroundColor: '#fff', 
+    backgroundColor: "#fff",
   },
   eventsContainerMonth: {
     flex: 1,
+    padding: 16,
     marginBottom: 16,
   },
   eventsContainerWeek: {
     flex: 3.5,
+    padding: 16,
     marginBottom: 16,
   },
   eventItem: {
@@ -331,6 +339,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
   },
+  timeText: {
+    fontSize: 14,
+  },
+  descriptionText: {
+    fontSize: 14,
+    marginTop: 6,
+    padding: 8,
+    color: "d3d3d3",
+    fontStyle: "italic",
+    borderColor: "#d3d3d3",
+    borderWidth: 1,
+    borderRadius: 8,
+  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -341,5 +362,29 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     marginTop: 16,
+  },
+  secondaryButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#ffeaea",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    color: "#8c0b0b",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
