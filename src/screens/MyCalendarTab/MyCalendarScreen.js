@@ -246,65 +246,77 @@ export default function MyCalendarScreen({ route, navigation }) {
           isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek
         }
       >
-        <FlatList
-          data={filteredEvents}
-          keyExtractor={(item) => `${item.calendarId}_${item.id}`}
-          renderItem={({ item }) => (
-            <View style={styles.eventItem}>
-              <Text style={styles.eventTitle}>
-                {item.title}{" "}
-                {item.shared
-                  ? "(Shared)"
-                  : item.deviceEvent
-                  ? "(Device)"
-                  : "(Personal)"}
-              </Text>
-              <Text style={styles.timeText}>{`${item.startDate.toLocaleString()} - ${item.endDate.toLocaleString()}`}</Text>
-              { item.description && <Text style={styles.descriptionText}>{item.description}</Text>}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={() => {
-                    if (item.deviceEvent) {
-                      // Redirect to native calendar for device events
-                      if (Platform.OS === "ios") {
-                        Linking.openURL(
-                          `calshow:${item.startDate.getTime() / 1000}`
-                        ); // Open iOS calendar event
-                      } else if (Platform.OS === "android") {
-                        Linking.openURL("content://com.android.calendar/time/"); // Open Android calendar app
-                      } else {
-                        Alert.alert(
-                          "Unsupported Platform",
-                          "Cannot open the calendar on this platform."
-                        );
-                      }
-                    } else {
-                      // Navigate to your EventDetails screen for non-device events
-                      navigation.navigate("EventDetails", {
-                        eventId: item.id,
-                        calendarId: item.calendarId,
-                        shared: item.shared,
-                      });
-                    }
-                  }}
-                >
-                  <Text style={styles.secondaryButtonText}>See More</Text>
-                </TouchableOpacity>
-                {!item.deviceEvent && (
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() =>
-                      handleDeleteEvent(item.id, item.calendarId, item.shared)
-                    }
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
+        {filteredEvents.length > 0 ? ( // Check for empty array
+          <FlatList
+            data={filteredEvents}
+            keyExtractor={(item) => `${item.calendarId}_${item.id}`}
+            renderItem={({ item }) => (
+              <View style={styles.eventItem}>
+                <Text style={styles.eventTitle}>
+                  {item.title}{" "}
+                  {item.shared
+                    ? "(Shared)"
+                    : item.deviceEvent
+                    ? "(Device)"
+                    : "(Personal)"}
+                </Text>
+                <Text
+                  style={styles.timeText}
+                >{`${item.startDate.toLocaleString()} - ${item.endDate.toLocaleString()}`}</Text>
+                {item.description && (
+                  <Text style={styles.descriptionText}>{item.description}</Text>
                 )}
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => {
+                      if (item.deviceEvent) {
+                        // Redirect to native calendar for device events
+                        if (Platform.OS === "ios") {
+                          Linking.openURL(
+                            `calshow:${item.startDate.getTime() / 1000}`
+                          ); // Open iOS calendar event
+                        } else if (Platform.OS === "android") {
+                          Linking.openURL(
+                            "content://com.android.calendar/time/"
+                          ); // Open Android calendar app
+                        } else {
+                          Alert.alert(
+                            "Unsupported Platform",
+                            "Cannot open the calendar on this platform."
+                          );
+                        }
+                      } else {
+                        // Navigate to your EventDetails screen for non-device events
+                        navigation.navigate("EventDetails", {
+                          eventId: item.id,
+                          calendarId: item.calendarId,
+                          shared: item.shared,
+                        });
+                      }
+                    }}
+                  >
+                    <Text style={styles.secondaryButtonText}>See More</Text>
+                  </TouchableOpacity>
+                  {!item.deviceEvent && (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() =>
+                        handleDeleteEvent(item.id, item.calendarId, item.shared)
+                      }
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
-          )}
-        />
+            )}
+          />
+        ) : (
+          <Text style={styles.noEventsText}>
+            No events found. Create an event!
+          </Text> // Show this message when there are no events
+        )}
       </View>
     </SafeAreaView>
   );
