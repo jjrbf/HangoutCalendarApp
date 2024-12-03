@@ -125,9 +125,9 @@ export default function EventDetailsScreen({ route, navigation }) {
 
   if (!event) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.loading}>
         <Text>Loading...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -149,7 +149,7 @@ export default function EventDetailsScreen({ route, navigation }) {
   );
 
   return (
-  <SafeAreaView style={styles.container}>
+  <View style={styles.container}>
     <ScrollView>
       <View style={styles.detailsContainer}>
         <Text style={styles.eventTitle}>{event.title}</Text>
@@ -233,7 +233,7 @@ export default function EventDetailsScreen({ route, navigation }) {
         )}
       </View>
     </ScrollView>
-  </SafeAreaView>
+  </View>
 
   );
 }
@@ -242,6 +242,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  loading: {
+    flex: 1,
+    justifyItems: "center",
+    alignItems: "center",
   },
   backButton: {
     marginLeft: 16,
@@ -253,11 +258,13 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    marginTop: 24,
     marginBottom: 8,
     color: "#333",
   },
   eventDescription: {
     fontSize: 16,
+    fontStyle: "italic",
     marginBottom: 20,
     color: "#555",
   },
