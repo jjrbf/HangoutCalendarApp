@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { auth, db } from "../../firebaseConfig";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
 import { Pressable } from "react-native";
 
@@ -24,42 +24,73 @@ export default function SharedCalendarScreen({ navigation }) {
 
   const userId = auth.currentUser.uid;
 
+  const fetchOwnerUsername = async (ownerId) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", ownerId));
+      return userDoc.exists() ? userDoc.data().username : "Unknown";
+    } catch (error) {
+      console.error("Error fetching owner username:", error);
+      return "Unknown";
+    }
+  };
+  
   const fetchSharedCalendars = async () => {
     try {
       const calendarsCollection = collection(db, "calendars");
-
+  
       // Fetch shared calendars
       let q = query(
         calendarsCollection,
         where("members", "array-contains", userId)
       );
       let querySnapshot = await getDocs(q);
-
-      let fetchedCalendars = querySnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
-
+  
+      let fetchedCalendars = await Promise.all(
+        querySnapshot.docs
+          .map(async (doc) => {
+            const calendarData = doc.data();
+            if (!calendarData) return null; // Skip if no data
+            const ownerUsername =
+              calendarData.ownerId === userId
+                ? "You"
+                : await fetchOwnerUsername(calendarData.ownerId);
+  
+            return {
+              id: doc.id || "unknown_id", // Fallback ID
+              ...calendarData,
+              ownerUsername,
+            };
+          })
+      );
+  
+      // Filter out invalid calendars
+      fetchedCalendars = fetchedCalendars.filter(
+        (calendar) => calendar && calendar.id && !calendar.id.startsWith("personal_calendar_")
+      );
+  
       setCalendars(fetchedCalendars);
-
+  
       // Fetch owned calendars
       q = query(calendarsCollection, where("ownerId", "==", userId));
       querySnapshot = await getDocs(q);
-
+  
       fetchedCalendars = querySnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .filter((calendar) => !calendar.id.startsWith("personal_calendar_"));
-
+        .map((doc) => {
+          const calendarData = doc.data();
+          if (!calendarData) return null; // Skip if no data
+          return {
+            id: doc.id || "unknown_id", // Fallback ID
+            ...calendarData,
+            ownerUsername: "You",
+          };
+        })
+        .filter((calendar) => calendar && calendar.id && !calendar.id.startsWith("personal_calendar_"));
+  
       setOwnedCalendars(fetchedCalendars);
     } catch (error) {
       console.error("Error fetching shared calendars:", error);
     }
-  };
+  };  
 
   useFocusEffect(
     useCallback(() => {
@@ -95,12 +126,13 @@ export default function SharedCalendarScreen({ navigation }) {
         <View>
           <Text style={styles.calendarName}>{item.name}</Text>
           <Text style={styles.calendarOwner}>
-            Owner: {item.ownerId === userId ? "You" : item.ownerId}
+            Owner: {item.ownerId == userId ? item.ownerUsername : `@${item.ownerUsername}`}
           </Text>
         </View>
       </View>
     </Pressable>
   );
+  
 
   return (
     <SafeAreaView style={styles.container}>
