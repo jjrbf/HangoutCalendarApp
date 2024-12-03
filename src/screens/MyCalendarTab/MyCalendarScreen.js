@@ -343,6 +343,7 @@ const styles = StyleSheet.create({
   eventsContainerWeek: {
     flex: 3.5,
     padding: 16,
+    marginTop: 24,
     marginBottom: 16,
     backgroundColor: "#fff",
   },
