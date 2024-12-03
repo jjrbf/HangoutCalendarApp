@@ -313,18 +313,19 @@ export default function MyCalendarScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 6,
     backgroundColor: "#fff",
   },
   eventsContainerMonth: {
     flex: 1,
     padding: 16,
     marginBottom: 16,
+    backgroundColor: "#fff",
   },
   eventsContainerWeek: {
     flex: 3.5,
     padding: 16,
     marginBottom: 16,
+    backgroundColor: "#fff",
   },
   eventItem: {
     padding: 10,
