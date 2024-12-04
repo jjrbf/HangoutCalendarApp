@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+// Screen to create a new shared calendar
 export default function CreateCalendarScreen({ navigation }) {
   const userId = auth.currentUser.uid;
 
@@ -20,7 +21,7 @@ export default function CreateCalendarScreen({ navigation }) {
   const [members, setMembers] = useState([]);
   const [friends, setFriends] = useState([]);
 
-  // Fetches user data
+  // Fetches the list of friends from Firestore
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -50,7 +51,7 @@ export default function CreateCalendarScreen({ navigation }) {
     fetchUserData();
   }, [userId]);
 
-  // Called when pressing the create calendar button
+  // Handles calendar creation when the button is pressed
   const handleCalendarCreation = async () => {
     if (!calendarName || members.length === 0) {  // Ensures everything is filled out
       Alert.alert("Creation Error", "Please fill out all fields.");
@@ -92,7 +93,7 @@ export default function CreateCalendarScreen({ navigation }) {
     }
   };
 
-  // Header navigation things
+  // Configures the navigation header
   useEffect(() => {
     navigation.setOptions({
       headerTitle: "Create Calendar",

@@ -7,6 +7,7 @@ import EventDetailsScreen from "./EventRelated/EventDetailsScreen.js";
 
 const Stack = createStackNavigator();
 
+// Defines the navigation stack for the My Calendar tab
 export default function MyCalendarTab({ navigation }) {
   return (
     <Stack.Navigator initialRouteName="MyCalendarScreen">

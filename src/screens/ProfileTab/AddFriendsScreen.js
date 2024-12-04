@@ -23,6 +23,7 @@ import {
 } from "firebase/firestore";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+// Manages the user's friends list, allowing them to view current friends, search for users, and add or remove friends
 export default function FriendsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);

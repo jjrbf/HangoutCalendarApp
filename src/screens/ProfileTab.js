@@ -7,6 +7,7 @@ import EditProfileScreen from "./ProfileTab/EditProfileScreen.js";
 
 const Stack = createStackNavigator();
 
+// Defines the navigation stack for the Profile tab
 export default function ProfileTab({ navigation }) {
   return (
     <Stack.Navigator initialRouteName="Profile">

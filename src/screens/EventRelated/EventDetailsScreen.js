@@ -8,6 +8,7 @@ import MapView, { Marker } from "react-native-maps";
 import { GEONAMES_USERNAME } from "../../config.js";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+// Displays detailed information about a selected event, including event details, calendar members, location, and weather data
 export default function EventDetailsScreen({ route, navigation }) {
   const { eventId, shared, calendarId } = route.params;
   const [calendar, setCalendar] = useState(null);

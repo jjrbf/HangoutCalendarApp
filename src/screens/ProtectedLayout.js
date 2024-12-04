@@ -8,6 +8,7 @@ import ProfileTab from "./ProfileTab.js";
 
 const Tab = createBottomTabNavigator();
 
+// Main navigation component after user authentication
 export default function ProtectedLayout() {
   return (
     <Tab.Navigator

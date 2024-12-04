@@ -15,6 +15,7 @@ import { collection, query, where, getDocs, doc, getDoc } from "firebase/firesto
 import { useFocusEffect } from "@react-navigation/native";
 import { Pressable } from "react-native";
 
+// Displays a list of shared calendars, with filtering and search functionality
 export default function SharedCalendarScreen({ navigation }) {
   const [calendars, setCalendars] = useState([]);
   const [ownedCalendars, setOwnedCalendars] = useState([]);
@@ -35,7 +36,7 @@ export default function SharedCalendarScreen({ navigation }) {
     }
   };
   
-  // Gets all the shared calendars
+  // Fetches all shared and owned calendars from Firestore
   const fetchSharedCalendars = async () => {
     try {
       const calendarsCollection = collection(db, "calendars");
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     // marginBottom: 12,
   },
   calendarItemPressed: {
-    backgroundColor: "#eee", // Highlight background color
+    backgroundColor: "#eee",
   },
   calendarRow: {
     flexDirection: "row",

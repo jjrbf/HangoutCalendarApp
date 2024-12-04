@@ -13,6 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { db } from "../../firebaseConfig";
 
+// Displays calendar group events and members
 export default function CalendarScreen({ route, navigation }) {
   const { calendarId } = route.params;
   const [calendar, setCalendar] = useState(null);

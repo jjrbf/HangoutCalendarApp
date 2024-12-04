@@ -6,6 +6,7 @@ import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "fi
 
 const db = getFirestore();
 
+// Component for handling signing up new users
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -98,6 +99,7 @@ export default function SignUpScreen({ navigation }) {
         value={username}
         onChangeText={setUsername}
         style={styles.input}
+        placeholderTextColor="#888"
       />
       {usernameMessage ? (
         <Text style={{ color: validUser ? "green" : "red", marginBottom: 10 }}>

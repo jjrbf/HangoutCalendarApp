@@ -14,11 +14,14 @@ import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { auth } from "../../firebaseConfig";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
- // This is for future implementation, kinda useless atm because we put the profile picture changing to the settings
+// Allows the user to view, upload, or delete their profile picture
+// Provides options to interact with the gallery and manage the profile picture stored in Firebase
 export default function EditProfileScreen({ navigation }) {
+   // This is for future implementation, kinda useless atm because we put the profile picture changing to the settings
   const userId = auth.currentUser.uid;
   const [profilePicture, setProfilePicture] = useState(null);
 
+  // Fetches the current user's profile picture from Firestore
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {
@@ -48,6 +51,7 @@ export default function EditProfileScreen({ navigation }) {
     });
   }, []);
 
+  // Handles uploading a new profile picture to Firebase Storage
   const handleUploadProfilePicture = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -147,8 +151,8 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 20, // Space between profile image and buttons
-    marginTop: 40, // Adjustable top margin
+    marginBottom: 20,
+    marginTop: 40,
     alignSelf: "center",
   },
   uploadButton: {
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom: 8, // Space between Upload and Delete buttons
+    marginBottom: 8,
   },
   uploadButtonText: {
     color: "#fff",

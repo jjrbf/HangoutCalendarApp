@@ -13,9 +13,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../../firebaseConfig";
 import { Timetable } from "../../components";
 import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
-// import DateTimePicker from "@react-native-community/datetimepicker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
+// A screen for adding a new event to the calendar
+// Manages event creation, draft saving
 export default function AddEventScreen({ route, navigation }) {
   const now = new Date(); // Current date and time
   const fifteenMinutesLater = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes later
@@ -29,7 +30,6 @@ export default function AddEventScreen({ route, navigation }) {
   const [eventDescription, setEventDescription] = useState("");
   const [startDate, setStartDate] = useState(now);
   const [endDate, setEndDate] = useState(fifteenMinutesLater);
-  // new date picker stuff
   const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
   const [isStartTimePickerVisible, setStartTimePickerVisible] = useState(false);
   const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
@@ -48,7 +48,7 @@ export default function AddEventScreen({ route, navigation }) {
   const { calendarId, shared } = route.params;
   const draftKey = `event_draft_${userId}_${shared ? calendarId : "personal"}`; // different keys for each calendar
 
-  // Load draft when the screen is loaded
+  // Loads an event draft from AsyncStorage when the screen is loaded
   useEffect(() => {
     const loadDraft = async () => {
       try {
@@ -86,7 +86,7 @@ export default function AddEventScreen({ route, navigation }) {
     loadDraft();
   }, []);
 
-  // Save draft when any field changes
+  // Saves the current state as a draft to AsyncStorage whenever fields change
   useEffect(() => {
     const saveDraft = async () => {
       const draft = {
@@ -132,7 +132,7 @@ export default function AddEventScreen({ route, navigation }) {
     }
   }, [route.params?.selectedLocation]); // Re-run when selectedLocation changes
 
-  // Function to add an event
+  // Adds a new event to Firestore and resets state after submission
   const handleAddEvent = async () => {
     const setEvent = async () => {
       const newEvent = {
@@ -231,12 +231,13 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
-  // Function that updates the time change
+  // Updates the start and end times when the user selects a time slot
   const handleTimeChange = (startDate, endDate) => {
     setStartDate(startDate);
     setEndDate(endDate);
   };
 
+  // Updates the start date after confirmation from the date picker
   const handleStartDateConfirm = (date) => {
     const updatedStartDate = new Date(date);
     updatedStartDate.setHours(startDate.getHours());
@@ -248,6 +249,7 @@ export default function AddEventScreen({ route, navigation }) {
     setStartDatePickerVisible(false);
   };
 
+  // Updates the end date after confirmation from the date picker
   const handleEndDateConfirm = (date) => {
     const updatedEndDate = new Date(date);
 
@@ -267,6 +269,7 @@ export default function AddEventScreen({ route, navigation }) {
     setEndDatePickerVisible(false);
   };
 
+  // Updates the end date after confirmation from the date picker
   const handleStartTimeConfirm = (time) => {
     const updatedStartDate = new Date(startDate);
     updatedStartDate.setHours(time.getHours());
@@ -283,6 +286,7 @@ export default function AddEventScreen({ route, navigation }) {
     setStartTimePickerVisible(false);
   };
 
+  // Updates the end time after confirmation from the time picker 
   const handleEndTimeConfirm = (time) => {
     const updatedEndDate = new Date(endDate);
     updatedEndDate.setHours(time.getHours());
@@ -297,6 +301,7 @@ export default function AddEventScreen({ route, navigation }) {
     setEndTimePickerVisible(false);
   };
 
+  // Validates the event's start and end times
   const validateEventTiming = (startDate, endDate) => {
     if (endDate <= startDate) {
       setInvalidMessage({

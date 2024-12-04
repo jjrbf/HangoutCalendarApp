@@ -26,6 +26,8 @@ import {
 import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
+// Displays a personalized calendar with events from the user's personal, shared, and device calendars
+// Allows the user to view, scroll, delete events, and toggle between week and month views
 export default function MyCalendarScreen({ route, navigation }) {
   const [isMonthView, setIsMonthView] = useState(false); // Used to change the layout after gesture handling
 

@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+// Allows the user to manage settings such as updating profile picture, importing device calendars, and logging out
 export default function SettingsScreen({ navigation }) {
   const userId = auth.currentUser.uid;
   const [calendars, setCalendars] = useState([]);
@@ -25,7 +26,7 @@ export default function SettingsScreen({ navigation }) {
   const [hasPermission, setHasPermission] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
 
-  // Used to get the rpofile picture from Firestore
+  // Fetches the user's profile picture from Firestore
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'reac
 import { auth } from '../firebaseConfig'; // Ensure this imports your auth instance
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
+// Component for handling signing in users
 export default function SignInScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

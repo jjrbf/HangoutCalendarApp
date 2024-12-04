@@ -13,12 +13,14 @@ import { ProfilePicture } from "../../components";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { doc, getDoc } from "firebase/firestore";
 
+// Displays the user's profile information, including profile picture, name, and username
+// Provides navigation to edit the profile, settings, and friends list
 export default function ProfileScreen({ navigation }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const userId = auth.currentUser.uid;
 
-  // Gets the user data from Firestore
+  // Fetches user data from Firestore and updates the profile state
   const fetchUserData = async () => {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
@@ -34,6 +36,7 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  // Fetches user data when the screen is focused
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
@@ -117,10 +120,10 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   editProfileLink: {
-    color: "#007BFF", // Blue text, matching button color
+    color: "#007BFF",
     fontSize: 16,
     fontWeight: "bold",
-    marginTop: 12, // Slight space beneath username
+    marginTop: 12,
   },
   friendsButton: {
     flexDirection: "row",

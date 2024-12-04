@@ -16,6 +16,7 @@ import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { GOOGLE_MAPS_API_KEY } from "../../config";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+// Allows the user to select a location for an event by searching, interacting with a map, or using their current location
 export default function SetLocationScreen({ route, navigation }) {
   const userId = auth.currentUser?.uid;
   const [location, setLocation] = useState(null);

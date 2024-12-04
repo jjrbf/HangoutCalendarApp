@@ -23,19 +23,13 @@ const weekBarText = '#007bff';
 const todayUnselectedColor = '#d3d3d3';
 const calendarColor = '#fff';
 
-// Grey Calendar Color Theme //
-// const monthBar = '#eee';
-// const weekBar = '#eee';
-// const weekBarText = '#464646';
-// const lightDarkColor = '#000';
-// const todayUnselectedColor = '#bbb';
-// const calendarColor = '#eee';
-
+// orderDaysOfWeek: Orders days of the week starting from a given day (default is Sunday)
 const orderDaysOfWeek = (startDayOfWeek = 0) => {
   const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   return [...days.slice(startDayOfWeek), ...days.slice(0, startDayOfWeek)];
 };
 
+// getMonthName: Returns the name of a month given its number (1-based).
 const getMonthName = (monthNumber) => {
   const monthNames = [
     'January',
@@ -54,7 +48,11 @@ const getMonthName = (monthNumber) => {
   return monthNames[monthNumber - 1];
 };
 
+// custom calendar
+// Main component to toggle between week and month calendar views
 const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
+  // Internal state and gesture handlers for toggling calendar views
+  // and selecting dates or navigating between weeks/months
 
   const today = new Date();
   // const today = new Date(2024, 10, 29); // FOR TESTING - Uncomment to test
@@ -83,23 +81,19 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
 
   const isMonthViewDerived = useDerivedValue(() => {
     const value = translateY.value >= MONTH_HEIGHT - WEEK_HEIGHT / 2;
-    // console.log("Derived Value:", value); // Log changes to derived value
     return value;
   });
 
   useAnimatedReaction(
-    () => isMonthViewDerived.value, // Input (what you want to react to)
+    () => isMonthViewDerived.value,
     (result, previousResult) => {
       if (result !== previousResult) {
         runOnJS(setIsMonthView)(result);
         runOnJS(onViewChange)(result);
-        // console.log("Updated Value in useAnimatedReaction:", result);
       }
     },
     [] // Dependencies
   );
-
-
 
   useEffect(() => {
     // Update total rows dynamically based on the month
@@ -152,8 +146,6 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
       }
     });
 
-    
-
   // Gesture for the drag bar
   const dragBarGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -197,7 +189,7 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
     transform: [{ translateY: topOffset.value }],
   }));
 
-  // Helper function to generate calendar rows
+  // Generates calendar rows for the selected month
   function getCalendarRows(year, month) {
     const START_DAY = 0;
 
@@ -230,6 +222,7 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
     return { rows, totalRows: rows.length };
   }
 
+  // Handles the selection of a specific day
   const onDaySelect = (day) => {
     if (day) {
       const selectedDate = new Date(
@@ -244,6 +237,7 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
     }
   };
 
+  // Updates the calendar to the next month
   const handleMonthClick = () => {
     setCurrentDate((prev) => {
       const nextMonth = prev.month === 12 ? 1 : prev.month + 1;
@@ -257,6 +251,7 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
     });
   };
 
+  // Jumps the calendar view to today's date
   const handleJumpToToday = () => {
     setCurrentDate({
       year: today.getFullYear(),
@@ -273,7 +268,7 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, styles.safeArea]}>
-        {/* Month and Days of the Week at the Top */}
+        {/* Month and Days of the Week Header */}
         <View style={styles.header}>
           {/* Month Text */}
           <Text style={styles.monthText} onPress={handleMonthClick}>
@@ -286,7 +281,6 @@ const WeekToMonthCalendar = ({ onDateChange, onViewChange }) => {
             <TouchableOpacity onPress={handleJumpToToday} style={styles.todayButton}>
               <Text style={styles.todayButtonText}>{today.getDate()}</Text>
             </TouchableOpacity>
-
             {/* Add Event Button */}
             <TouchableOpacity
               onPress={() =>
