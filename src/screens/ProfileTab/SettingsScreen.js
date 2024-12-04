@@ -25,6 +25,7 @@ export default function SettingsScreen({ navigation }) {
   const [hasPermission, setHasPermission] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
 
+  // Used to get the rpofile picture from Firestore
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {
@@ -68,8 +69,9 @@ export default function SettingsScreen({ navigation }) {
     })();
   }, [navigation]);
 
+  // handles the upload of the profile picture
   const handleUploadProfilePicture = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync(); // Asks for permission for the media library
     if (status !== "granted") {
       Alert.alert(
         "Permission Denied",
@@ -78,13 +80,13 @@ export default function SettingsScreen({ navigation }) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({  // Awaits the selection
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled) { // If it isn't cancelled, uploads the profile picture
       const imageUri = result.assets[0].uri;
       const storage = getStorage();
       const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
@@ -107,6 +109,7 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  // Deletes profile picture by getting rid of the link in Firestore 
   const handleDeleteProfilePicture = async () => {
     const storage = getStorage();
     const storageRef = ref(storage, `profile_pictures/${userId}.jpg`);
@@ -125,9 +128,11 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  // Fetches calendars from the device
   async function fetchCalendars() {
     try {
-      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      // Asks for permission for the device calendar (native feature)
+      const { status } = await Calendar.requestCalendarPermissionsAsync();  
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
@@ -147,6 +152,7 @@ export default function SettingsScreen({ navigation }) {
     }
   }
 
+  // Saves calendar to Asyncstorage
   const handleSaveCalendar = async () => {
     try {
       const selectedCalendar = calendars.find(
@@ -159,7 +165,7 @@ export default function SettingsScreen({ navigation }) {
       }
 
       await AsyncStorage.setItem(
-        "@device_calendar_imported",
+        "@device_calendar_imported",  // Under this, but should probably differentiate it between users in case different accounts 
         JSON.stringify(selectedCalendar)
       );
       Alert.alert("Success", "Calendar saved successfully!");
@@ -169,6 +175,7 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  // Handles the logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -180,6 +187,7 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  // Handles the removal of the saved device calendar from Asyncstorage
   const handleRemoveCalendar = async () => {
     try {
       // Remove calendar from AsyncStorage

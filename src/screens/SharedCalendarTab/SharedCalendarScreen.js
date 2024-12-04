@@ -24,6 +24,7 @@ export default function SharedCalendarScreen({ navigation }) {
 
   const userId = auth.currentUser.uid;
 
+  // Function to fetch the owner username to show it on the UI for each shared calendar
   const fetchOwnerUsername = async (ownerId) => {
     try {
       const userDoc = await getDoc(doc(db, "users", ownerId));
@@ -34,6 +35,7 @@ export default function SharedCalendarScreen({ navigation }) {
     }
   };
   
+  // Gets all the shared calendars
   const fetchSharedCalendars = async () => {
     try {
       const calendarsCollection = collection(db, "calendars");
@@ -92,12 +94,14 @@ export default function SharedCalendarScreen({ navigation }) {
     }
   };  
 
+  // Runs if the screen is in focus
   useFocusEffect(
     useCallback(() => {
       fetchSharedCalendars();
     }, [userId])
   );
 
+  // Function to get the filtered calendars based on the filter
   const filteredCalendars = () => {
     let combinedCalendars = [];
     if (filter === "All Calendars") {
@@ -113,6 +117,7 @@ export default function SharedCalendarScreen({ navigation }) {
     );
   };
 
+  // Code to render the calendar for the FlatList below
   const renderCalendar = ({ item }) => (
     <Pressable
       style={({ pressed }) => [

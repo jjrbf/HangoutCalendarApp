@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Calendar from "expo-calendar"; // Add Expo Calendar
+import * as Calendar from "expo-calendar";
 import { db, auth } from "../../firebaseConfig";
 import {
   collection,
@@ -27,26 +27,26 @@ import { WeekToMonthCalendar } from "../../components";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function MyCalendarScreen({ route, navigation }) {
-  const [isMonthView, setIsMonthView] = useState(false);
+  const [isMonthView, setIsMonthView] = useState(false); // Used to change the layout after gesture handling
 
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
   const [deviceCalendarEvents, setDeviceCalendarEvents] = useState([]);
-  const [loading, setLoading] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
   const userId = auth.currentUser.uid;
 
   // Fetch device calendar events
   useEffect(() => {
     const fetchStoredCalendar = async () => {
       try {
-        const storedCalendar = await AsyncStorage.getItem(
+        const storedCalendar = await AsyncStorage.getItem(  // Gets item from ASYNCSTORAGE
           "@device_calendar_imported"
         );
 
         if (storedCalendar) {
           const selectedCalendar = JSON.parse(storedCalendar); // Parse the stored calendar
-          const { status } = await Calendar.requestCalendarPermissionsAsync();
+          const { status } = await Calendar.requestCalendarPermissionsAsync();  // Requests calendar permission
           if (status !== "granted") {
             Alert.alert(
               "Permission Denied",
@@ -55,18 +55,18 @@ export default function MyCalendarScreen({ route, navigation }) {
             return;
           }
           const now = new Date();
-          const oneDayBefore = new Date(now.getTime() - 1000 * 60 * 60 * 24);
-          const oneMonthAfter = new Date(
+          const oneDayBefore = new Date(now.getTime() - 1000 * 60 * 60 * 24); // In milliseconds, get it from 1 day before
+          const oneMonthAfter = new Date(  // In milliseconds, same thing for month after
             now.getTime() + 1000 * 60 * 60 * 24 * 30
           );
 
-          const eventsList = await Calendar.getEventsAsync(
+          const eventsList = await Calendar.getEventsAsync( // Gets calendar events from one day before to 1 month after
             [selectedCalendar.id], // Use selected calendar ID
             oneDayBefore,
             oneMonthAfter
           );
 
-          const formattedEvents = eventsList.map((event) => ({
+          const formattedEvents = eventsList.map((event) => ({  // Formats the events
             id: event.id,
             calendarId: selectedCalendar.id,
             title: event.title,
@@ -85,8 +85,8 @@ export default function MyCalendarScreen({ route, navigation }) {
             endTime: event.endDate.getTime(),
           }));
 
-          // Update Firestore with busyTimes
-          const userDocRef = doc(db, "users", userId); // Replace USER_ID with the logged-in user's ID
+          // Update Firestore with busyTimes to allow other users to get their times when busy for scheduling
+          const userDocRef = doc(db, "users", userId);
           await updateDoc(userDocRef, {
             busyTimes: busyTimes,
           });
@@ -122,7 +122,7 @@ export default function MyCalendarScreen({ route, navigation }) {
         where("ownerId", "==", userId)
       );
 
-      const [
+      const [ // Awaits all snapshots
         personalEventsSnapshot,
         sharedCalendarsSnapshot,
         ownedSharedCalendarsSnapshot,
@@ -189,15 +189,18 @@ export default function MyCalendarScreen({ route, navigation }) {
     setFilteredEvents(filtered);
   };
 
+  // Used to handle the date change from the WeekToMonthCalendar.js component
   const handleDateChange = (date) => {
     setSelectedDate(date);
     filterEvents(events, date);
   };
 
+  // Used to handle the view change (from month to week view) from the WeekToMonthCalendar.js component
   const handleViewChange = (viewState) => {
     setIsMonthView(viewState);
   };
 
+  // Deletes events from Firestore
   const handleDeleteEvent = async (eventId, calendarId, shared) => {
     Alert.alert(
       "Delete Event",
@@ -232,6 +235,7 @@ export default function MyCalendarScreen({ route, navigation }) {
     );
   };
 
+  // Refreshes when the screen is focused
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
@@ -240,7 +244,7 @@ export default function MyCalendarScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <WeekToMonthCalendar
+      <WeekToMonthCalendar // Custom component to show the calendar (maybe we should've used the RN Calendar)
         onDateChange={handleDateChange}
         onViewChange={handleViewChange}
         style={{ flex: 1 }}
@@ -248,7 +252,7 @@ export default function MyCalendarScreen({ route, navigation }) {
 
       <View
         style={
-          isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek
+          isMonthView ? styles.eventsContainerMonth : styles.eventsContainerWeek  // Change layout if month or week view
         }
       >
         {loading ? ( // Show loading indicator

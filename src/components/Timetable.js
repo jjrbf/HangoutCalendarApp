@@ -38,24 +38,7 @@ export default function Timetable({
   const hoursPerDay = 24;
   const daysPerWeek = 7;
 
-  const fetchBusyTimes = async (userId) => {
-    try {
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        return userData.busyTimes || [];
-      } else {
-        console.log("No user document found!");
-        return [];
-      }
-    } catch (error) {
-      console.error("Error fetching busy times:", error);
-      return [];
-    }
-  };
-
+  // Used to fetch the busy times for each member
   useEffect(() => {
     const fetchBusyTimes = async () => {
       try {
@@ -64,16 +47,16 @@ export default function Timetable({
         const calendarDocRef = doc(db, "calendars", calendarId);
         const calendarSnapshot = await getDoc(calendarDocRef);
 
-        if (!calendarSnapshot.exists()) {
+        if (!calendarSnapshot.exists()) { // End function early if not found
           Alert.alert("Error", "Calendar not found.");
           setLoading(false);
           return;
         }
 
         const calendarData = calendarSnapshot.data();
-        const { members, ownerId } = calendarData;
-        const memberIds = [ownerId, ...members];
-        const allBusyTimes = [];
+        const { members, ownerId } = calendarData;  // Extract info from the snapshot
+        const memberIds = [ownerId, ...members];    // Puts all members into one variable
+        const allBusyTimes = [];                    // Creates the busy times array
 
         for (const memberId of memberIds) {
           // Fetch all shared calendars where the user is a member
@@ -175,88 +158,105 @@ export default function Timetable({
   }, [calendarId, currentWeekStart]);
 
   // Generate timetable grid
-  useEffect(() => {
-    const grid = Array.from({ length: daysPerWeek }, (_, day) =>
-      Array.from({ length: hoursPerDay * 2 }, (_, hour) => {
-        const time =
-          currentWeekStart.getTime() +
-          day * 24 * 60 * 60 * 1000 +
-          (hour / 2) * 60 * 60 * 1000;
-        const overlappingEvents = busyTimes.filter(
-          (busy) => time >= busy.start && time < busy.end
-        );
+useEffect(() => {
+  // Create a grid of time slots for the week
+  const grid = Array.from({ length: daysPerWeek }, (_, day) => 
+    Array.from({ length: hoursPerDay * 2 }, (_, hour) => {
+      // Calculate the specific time for each cell in the grid
+      const time =
+        currentWeekStart.getTime() +
+        day * 24 * 60 * 60 * 1000 + // Add the day offset
+        (hour / 2) * 60 * 60 * 1000; // Add the hourly offset (30-minute intervals)
 
-        return { time, overlaps: overlappingEvents.length };
-      })
-    );
+      // Find overlapping events in the busy times array
+      const overlappingEvents = busyTimes.filter(
+        (busy) => time >= busy.start && time < busy.end
+      );
 
-    setGridData(grid);
+      // Return cell data including time and overlap count
+      return { time, overlaps: overlappingEvents.length };
+    })
+  );
 
-    const fetchPassedTimes = () => {
-      const now = Date.now();
-      const passed = grid
-        .flat()
-        .filter((cell) => cell.time < now)
-        .map((cell) => cell.time);
-      setPassedTimes(passed);
-    };
+  // Update the grid data state
+  setGridData(grid);
 
-    fetchPassedTimes();
-  }, [busyTimes, currentWeekStart]);
+  // Function to calculate passed times
+  const fetchPassedTimes = () => {
+    const now = Date.now(); // Current time
+    const passed = grid
+      .flat() // Flatten the grid into a single array of cells
+      .filter((cell) => cell.time < now) // Filter cells that have passed
+      .map((cell) => cell.time); // Extract the time values
+    setPassedTimes(passed); // Update passed times state
+  };
 
-  useEffect(() => {
-    const cellsT = (endDate.getTime() - startDate.getTime()) / 1800000;
-    let arr = [];
-    for (let i = 0; i < cellsT; i++) {
-      arr.push(startDate.getTime() + i * 1800000);
-    }
-    setSelectedTime(arr); // Update selected time
-  }, [startDate, endDate]); // change selected time
+  // Fetch passed times initially
+  fetchPassedTimes();
+}, [busyTimes, currentWeekStart]); // Re-run when busy times or current week start changes
 
-  useEffect(() => {
-    if (endDate.getTime() - startDate.getTime() < 0) {
-      setInvalidMessage({
-        message: "End date must be after the start date.",
-        stop: false,
+// Generate selected time slots based on the start and end date
+useEffect(() => {
+  // Calculate the number of 30-minute intervals between start and end date
+  const cellsT = (endDate.getTime() - startDate.getTime()) / 1800000; // 1800000 ms = 30 minutes
+  let arr = [];
+  for (let i = 0; i < cellsT; i++) {
+    arr.push(startDate.getTime() + i * 1800000); // Add 30-minute intervals to the array
+  }
+  setSelectedTime(arr); // Update the selected time state
+}, [startDate, endDate]); // Re-run when startDate or endDate changes
+
+// Validate selected time slots
+useEffect(() => {
+  // Check if the end date is before the start date
+  if (endDate.getTime() - startDate.getTime() < 0) {
+    setInvalidMessage({
+      message: "End date must be after the start date.", // Error message
+      stop: false, // Allow user to proceed (potentially fixable)
+    });
+    console.log("END DATE");
+  } 
+  // Check if selected time includes already passed times
+  else if (
+    Array.isArray(passedTimes) &&
+    passedTimes.length > 0 &&
+    (passedTimes[passedTimes.length - 1] - startDate.getTime() > 0 || 
+     passedTimes[passedTimes.length - 1] - endDate.getTime() > 0)
+  ) {
+    setInvalidMessage({
+      message: "Selected time must not be passed already.", // Error message
+      stop: false, // Allow user to proceed
+    });
+    console.log("PASSED TIME");
+  } 
+  // Check for overlapping events during the selected time
+  else {
+    let overlapFound = false;
+
+    // Iterate through each cell in the grid to check for overlaps
+    gridData.forEach((day) => {
+      day.forEach((cell) => {
+        if (
+          selectedTime.includes(cell.time) && // Time matches a selected time
+          cell.overlaps > 0 // There are overlapping events
+        ) {
+          overlapFound = true;
+        }
       });
-      console.log("END DATE");
-    } else if (
-      Array.isArray(passedTimes) &&
-      passedTimes.length > 0 &&
-      (passedTimes[passedTimes.length - 1] - startDate.getTime() > 0 ||
-        passedTimes[passedTimes.length - 1] - endDate.getTime() > 0)
-    ) {
+    });
+
+    // If overlaps are found, display an error message
+    if (overlapFound) {
       setInvalidMessage({
-        message: "Selected time must not be passed already.",
-        stop: false,
+        message: "One or more members are busy during the selected time.", // Error message
+        stop: true, // Prevent user from proceeding
       });
-      console.log("PASSED TIME");
+      console.log("OVERLAP FOUND");
     } else {
-      // Check for overlaps in gridData using similar logic
-      let overlapFound = false;
-
-      gridData.forEach((day) => {
-        day.forEach((cell) => {
-          if (
-            selectedTime.includes(cell.time) && // Time matches a selected time
-            cell.overlaps > 0 // There's an overlap
-          ) {
-            overlapFound = true;
-          }
-        });
-      });
-
-      if (overlapFound) {
-        setInvalidMessage({
-          message: "One or more members are busy during the selected time.",
-          stop: true,
-        });
-        console.log("OVERLAP FOUND");
-      } else {
-        setInvalidMessage(null);
-      }
+      setInvalidMessage(null); // No issues, clear invalid message
     }
-  }, [selectedTime]); // change selected time
+  }
+}, [selectedTime]); // Re-run validation when selected time changes
 
   // Handle tap on a free slot
   const handleTap = (time) => {

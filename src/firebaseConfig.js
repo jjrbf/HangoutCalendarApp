@@ -25,7 +25,7 @@ if (Platform.OS === "web") { // this is so that it works on expo web
   auth.setPersistence(browserLocalPersistence);
 } else {
   auth = initializeAuth(firebase_app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: getReactNativePersistence(AsyncStorage), // allows users to stay logged in
   });
 }
 

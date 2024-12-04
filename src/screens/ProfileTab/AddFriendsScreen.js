@@ -30,6 +30,7 @@ export default function FriendsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("Your Friends");
   const userId = auth.currentUser.uid;
 
+  // Run getting of friends if on friends view and also setting up the navigation bar
   useEffect(() => {
     if (activeTab === "Your Friends") {
       fetchFriends();
@@ -48,6 +49,7 @@ export default function FriendsScreen({ navigation }) {
     });
   }, [navigation, activeTab]);
 
+  // Fetch friends from Firestore
   const fetchFriends = async () => {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
@@ -80,6 +82,7 @@ export default function FriendsScreen({ navigation }) {
     }
   };
 
+  // Handles the searching of friends 
   const handleSearch = async () => {
     try {
       const usersRef = collection(db, "users");
@@ -102,6 +105,7 @@ export default function FriendsScreen({ navigation }) {
     }
   };
 
+  // Handles addition and removal of friends
   const handleAddFriend = async (friendId) => {
     try {
       await updateDoc(doc(db, "users", userId), {

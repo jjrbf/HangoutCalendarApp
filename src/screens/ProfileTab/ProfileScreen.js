@@ -18,6 +18,7 @@ export default function ProfileScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const userId = auth.currentUser.uid;
 
+  // Gets the user data from Firestore
   const fetchUserData = async () => {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));

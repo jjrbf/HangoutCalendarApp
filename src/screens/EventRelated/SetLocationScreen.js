@@ -42,7 +42,7 @@ export default function SetLocationScreen({ route, navigation }) {
       ),
     });
 
-    (async () => {
+    (async () => {  // Asks for location request 
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
@@ -62,6 +62,7 @@ export default function SetLocationScreen({ route, navigation }) {
     })();
   }, []);
 
+  // Function to search the geocoder
   const performSearch = async () => {
     if (!searchLocation.trim()) {
       Alert.alert("Error", "Please enter a valid location.");
@@ -92,6 +93,7 @@ export default function SetLocationScreen({ route, navigation }) {
     }
   };
 
+  // Function to set location, also navigates back to the addevent screen
   const handleSetLocation = () => {
     if (selectedLocation) {
       console.log("Setting location:", selectedLocation);
@@ -105,11 +107,13 @@ export default function SetLocationScreen({ route, navigation }) {
     }
   };
 
+  // Handles map press to set location
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setSelectedLocation({ latitude, longitude });
   };
 
+  // Updating the location text based on state
   let locationText = "Waiting..";
   if (errorMsg) {
     locationText = errorMsg;

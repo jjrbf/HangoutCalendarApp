@@ -125,12 +125,14 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
+  // Allows the flow of the location data between screens
   useEffect(() => {
     if (route.params?.selectedLocation) {
       setLocation(route.params.selectedLocation);
     }
   }, [route.params?.selectedLocation]); // Re-run when selectedLocation changes
 
+  // Function to add an event
   const handleAddEvent = async () => {
     const setEvent = async () => {
       const newEvent = {
@@ -189,16 +191,17 @@ export default function AddEventScreen({ route, navigation }) {
     } else setEvent();
   };
 
+  // Ran when pressing the cancel button, asks the user if they want to keep a draft if they changed anything
   const handleLeaveScreen = () => {
     if (changed) {
-      Alert.alert(
+      Alert.alert(  // Alert that runs if it's changed
         "Keep Draft?",
         "You haven't finished filling out your event. Would you like to keep a draft for later?",
         [
           {
             text: "Delete Draft",
             onPress: () => {
-              clearDraft();
+              clearDraft(); // Clears the draft
               navigation.navigate(shared ? "Calendar" : "MyCalendarScreen", {
                 calendarId,
               });
@@ -228,6 +231,7 @@ export default function AddEventScreen({ route, navigation }) {
     }
   };
 
+  // Function that updates the time change
   const handleTimeChange = (startDate, endDate) => {
     setStartDate(startDate);
     setEndDate(endDate);

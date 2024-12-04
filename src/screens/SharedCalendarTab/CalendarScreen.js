@@ -21,6 +21,7 @@ export default function CalendarScreen({ route, navigation }) {
   const [events, setEvents] = useState([]);
   const [showMembers, setShowMembers] = useState(false); // State to toggle views
 
+  // Gets the calendardetails from Firestore
   const fetchCalendarDetails = async () => {
     try {
       const calendarRef = doc(db, "calendars", calendarId);
@@ -68,6 +69,7 @@ export default function CalendarScreen({ route, navigation }) {
     }
   };
 
+  // Refetches the calendar details when the screen is focused
   useFocusEffect(
     useCallback(() => {
       fetchCalendarDetails();
@@ -109,6 +111,7 @@ export default function CalendarScreen({ route, navigation }) {
     });
   }, [navigation, calendar, showMembers]);
 
+  // Function to render the event below in the FlatList
   const renderEvent = ({ item }) => (
     <TouchableOpacity
       style={styles.eventItem}
@@ -130,6 +133,8 @@ export default function CalendarScreen({ route, navigation }) {
     </TouchableOpacity>
   );
 
+  // Same thing as above but for the member
+  // Different styling if it's the owner to differentiate 
   const renderMember = ({ item }) => (
     <View
       style={[
@@ -140,7 +145,7 @@ export default function CalendarScreen({ route, navigation }) {
       <ProfilePicture userId={item.id} size={50} />
       <View style={styles.memberInfo}>
         <Text style={styles.memberName}>
-          {item.name} {item.id === calendar?.ownerId && "(Owner)"}
+          {item.name} {item.id === calendar?.ownerId && "(Owner)"}  
         </Text>
         <Text style={styles.memberUsername}>@{item.username}</Text>
       </View>

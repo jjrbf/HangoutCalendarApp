@@ -14,6 +14,7 @@ import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { auth } from "../../firebaseConfig";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
+ // This is for future implementation, kinda useless atm because we put the profile picture changing to the settings
 export default function EditProfileScreen({ navigation }) {
   const userId = auth.currentUser.uid;
   const [profilePicture, setProfilePicture] = useState(null);

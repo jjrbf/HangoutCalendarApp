@@ -20,6 +20,7 @@ export default function CreateCalendarScreen({ navigation }) {
   const [members, setMembers] = useState([]);
   const [friends, setFriends] = useState([]);
 
+  // Fetches user data
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -31,7 +32,7 @@ export default function CreateCalendarScreen({ navigation }) {
             getDoc(doc(db, "users", friendUid))
           );
           const friendDocs = await Promise.all(friendPromises);
-          const friendList = friendDocs
+          const friendList = friendDocs // Getting the name, username, and profile picture for each person
             .filter((doc) => doc.exists())
             .map((doc) => ({
               id: doc.id,
@@ -49,14 +50,16 @@ export default function CreateCalendarScreen({ navigation }) {
     fetchUserData();
   }, [userId]);
 
+  // Called when pressing the create calendar button
   const handleCalendarCreation = async () => {
-    if (!calendarName || members.length === 0) {
+    if (!calendarName || members.length === 0) {  // Ensures everything is filled out
       Alert.alert("Creation Error", "Please fill out all fields.");
       return;
     }
 
     try {
       const calendarsCollection = collection(db, "calendars");
+      // Checks if the name is going to be duplicated or not
       const querySnapshot = await getDocs(
         query(
           calendarsCollection,
@@ -73,6 +76,7 @@ export default function CreateCalendarScreen({ navigation }) {
         return;
       }
 
+      // If not, adds it to Firestore
       await addDoc(calendarsCollection, {
         ownerId: userId,
         name: calendarName,
@@ -88,6 +92,7 @@ export default function CreateCalendarScreen({ navigation }) {
     }
   };
 
+  // Header navigation things
   useEffect(() => {
     navigation.setOptions({
       headerTitle: "Create Calendar",

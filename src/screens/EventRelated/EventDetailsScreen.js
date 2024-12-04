@@ -17,6 +17,7 @@ export default function EventDetailsScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [weather, setWeather] = useState(null);
 
+  // Fetches the events from Firestore
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
@@ -77,6 +78,7 @@ export default function EventDetailsScreen({ route, navigation }) {
     fetchEventDetails();
   }, [eventId]);
 
+  // Fetches the weather from the geonames API
   useEffect(() => {
     if (event && event.location != null) {
       const fetchWeather = async () => {
@@ -102,6 +104,7 @@ export default function EventDetailsScreen({ route, navigation }) {
     }
   }, [event]);
 
+  // Updating the information for the navigation header
   useEffect(() => {
     navigation.setOptions({
       headerTitle: "Event Details",
@@ -115,6 +118,7 @@ export default function EventDetailsScreen({ route, navigation }) {
     });
   }, [navigation]);
 
+  // Error elements
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -123,6 +127,7 @@ export default function EventDetailsScreen({ route, navigation }) {
     );
   }
 
+  // Loading while event doesn't exist yet
   if (!event) {
     return (
       <View style={styles.loading}>
@@ -130,23 +135,6 @@ export default function EventDetailsScreen({ route, navigation }) {
       </View>
     );
   }
-
-  const renderMember = ({ item }) => (
-    <View
-      style={[
-        styles.memberItem,
-        item.id === calendar?.ownerId ? styles.ownerItem : {},
-      ]}
-    >
-      <ProfilePicture userId={item.id} size={50} />
-      <View style={styles.memberInfo}>
-        <Text style={styles.memberName}>
-          {item.name} {item.id === calendar?.ownerId && "(Owner)"}
-        </Text>
-        <Text style={styles.memberUsername}>@{item.username}</Text>
-      </View>
-    </View>
-  );
 
   return (
   <View style={styles.container}>
