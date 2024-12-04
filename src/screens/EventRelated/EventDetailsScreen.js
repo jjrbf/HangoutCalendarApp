@@ -209,7 +209,8 @@ export default function EventDetailsScreen({ route, navigation }) {
         {weather && (
           <View style={styles.weatherDetails}>
             <Text style={styles.locationText}>
-              Location: {weather.stationName || "Unavailable"}
+              {/* Location: {weather.stationName || "Unavailable"} */}
+              Weather:
             </Text>
             <Text style={styles.tempText}>
               Temperature: {weather.temperature || "N/A"}°C
